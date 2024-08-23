@@ -525,11 +525,11 @@ function initGame() {
         console.log(`Power Up activated by eating ${fruitType}`);
         
         let powerUpDuration;
-        if (fruitType === 1) {
+        if (fruitType === 'fruit1') {
             powerUpDuration = settings.powerUp.duration1 * 1000;
-        } else if (fruitType === 2) {
+        } else if (fruitType === 'fruit2') {
             powerUpDuration = settings.powerUp.duration2 * 1000;
-        } else if (fruitType === 3) {
+        } else if (fruitType === 'fruit3') {
             powerUpDuration = settings.powerUp.duration3 * 1000;
         }
         const speedMultiplier = settings.powerUp.speedMultiplier;
@@ -573,11 +573,11 @@ function initGame() {
         console.log(`Power Down activated by eating ${biscuitType}`);
         
         let powerDownDuration;
-        if (biscuitType === 1) {
+        if (biscuitType === 'biscuit1') {
             powerDownDuration = settings.powerDown.duration1 * 1000;
-        } else if (biscuitType === 2) {
+        } else if (biscuitType === 'biscuit2') {
             powerDownDuration = settings.powerDown.duration2 * 1000;
-        } else if (biscuitType === 3) {
+        } else if (biscuitType === 'biscuit3') {
             powerDownDuration = settings.powerDown.duration3 * 1000;
         }
         const speedMultiplier = settings.powerDown.speedMultiplier;
@@ -1294,7 +1294,7 @@ function initGame() {
         resizeCanvas();
     }
 
-    
+
 
     function endLevel() {
         // Rimuovi gli event listener
