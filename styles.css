@@ -22,11 +22,12 @@ body {
 }
 
 #gameCanvas {
-    background-color: #87CEEB;
-    background-image: url('background-level1.png');
+    background-color: rgba(255, 255, 255, 0);
+    /* background-image: url('background-level1.png'); */
     background-size: cover;
     background-position: center;
     display: block;
+    margin-top: 50px;
 }
 
 .overlay-button {

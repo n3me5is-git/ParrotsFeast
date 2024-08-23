@@ -1,14 +1,12 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-
-let parrotX = 100;
-let parrotY = 100;
-const speed = 5;
-let moveDirection = null;
-let isFlipped = false;
-let scaleFactor = 1;
-let canvas_nom_width = 600;
-let canvas_nom_height = 400;
+let background; // Variabile globale per l'immagine di sfondo
+const canvas_nom_width = 700;
+const canvas_nom_height = 400;
+const parrot_move_xMin = 25;
+const parrot_move_xMax = canvas_nom_width-25;
+const parrot_move_yMin = 27;
+const parrot_move_yMax = canvas_nom_height-50;
 
 
 // Impostazioni di gioco inglobate direttamente nel codice
@@ -18,9 +16,9 @@ const default_settings = {
         minDuration: 3,
         maxDuration: 30,
         xSeedMin: 50,
-        xSeedMax: 550,
+        xSeedMax: canvas_nom_width-50,
         ySeedMin: 50,
-        ySeedMax: 270,
+        ySeedMax: canvas_nom_height-150,
         N: 2000, // Numero di coppie (x, y) da generare
         difficulty: 5, // Valore di difficulty da 1 a 10
         minSeedDistance: 50, // Distanza minima tra semi in pixel
@@ -41,6 +39,7 @@ const default_settings = {
         cooldown: 30 // Tempo di cooldown del boost
     },
     game: {
+        speed: 4,   // Velocità default pappagallo
         state: 'default', // Stato iniziale: "default", "power_up", "power_down"
         musicVolume: 0.5
     },
@@ -65,6 +64,18 @@ const default_settings = {
             biscuit2: 200,
             biscuit3: 200
         }
+    },
+    powerUp: {
+        duration1: 15,  // Durata in secondi per il tipo di frutta 1
+        duration2: 20,  // Durata in secondi per il tipo di frutta 2
+        duration3: 25,  // Durata in secondi per il tipo di frutta 3
+        speedMultiplier: 1.5, // Moltiplicatore di velocità durante il Power Up
+    },
+    powerDown: {
+        duration1: 25,  // Durata in secondi per il tipo di biscotto 1
+        duration2: 30,  // Durata in secondi per il tipo di biscotto 2
+        duration3: 35,  // Durata in secondi per il tipo di biscotto 3
+        speedMultiplier: 0.6, // Moltiplicatore di velocità durante il Power Down
     }
 };
 
@@ -101,23 +112,56 @@ let currentLevelState = {
     // Aggiungeremo altri contatori in futuro
 };
 
-let background; // Variabile globale per l'immagine di sfondo
+
+
+
+
+// Funzione per entrare in modalità fullscreen
+function enterFullscreen() {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+    } else if (elem.mozRequestFullScreen) { // Firefox
+        elem.mozRequestFullScreen();
+    } else if (elem.webkitRequestFullscreen) { // Chrome, Safari, Opera
+        elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) { // IE/Edge
+        elem.msRequestFullscreen();
+    }
+}
+
+// Funzione per uscire dalla modalità fullscreen
+function exitFullscreen() {
+    if (document.exitFullscreen) {
+        document.exitFullscreen();
+    } else if (document.mozCancelFullScreen) { // Firefox
+        document.mozCancelFullScreen();
+    } else if (document.webkitExitFullscreen) { // Chrome, Safari, Opera
+        document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) { // IE/Edge
+        document.msExitFullscreen();
+    }
+}
+
+
 
 
 function initGame() {
 
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-
-    let parrotX = 280;
-    let parrotY = 150;
-    const speed = 5;
+    let parrotX = canvas_nom_width/2-25;
+    let parrotY = canvas_nom_height/2-50;
+    let speed = 5;
     let moveDirection = null;
     let isFlipped = false;
     let scaleFactor = 1;
     let boostEnabled = true;
     let boostState = 'enabled'; // Valori possibili: 'enabled', 'cooldown', 'disabled'
     let boostCooldown = 0; // Variabile globale per tenere traccia del countdown
+    let powerUpActive = false;
+    let powerUpEndTime = 0;
+    
+    let powerDownActive = false;
+    let powerDownEndTime = 0;
 
     
     let score = 0;
@@ -169,13 +213,16 @@ function initGame() {
 
     const buttonSize = 40;
     const iconPadding = 8;
+    const buttons_y = canvas_nom_height-60;
     const buttons = {
-        left: { x: 30, y: 320+20, iconSrc: 'arrow-left.svg', visible: true },
-        right: { x: 90, y: 320+20, iconSrc: 'arrow-right.svg', visible: true },
-        up: { x: 510, y: 280+10, iconSrc: 'arrow-up.svg', visible: true },
-        down: { x: 510, y: 320+20, iconSrc: 'arrow-down.svg', visible: true },
-        boost: { x: 280, y: 320+20, iconSrc: 'rocket.svg', visible: true },
-        boost_disabled: { x: 280, y: 320+20, iconSrc: 'rocket-disabled.svg', visible: false }
+        left: { x: 60, y: buttons_y, iconSrc: 'arrow-left.svg', visible: true },
+        right: { x: 160, y: buttons_y, iconSrc: 'arrow-right.svg', visible: true },
+        up: { x: canvas_nom_width-90, y: buttons_y-90, iconSrc: 'arrow-up.svg', visible: true },
+        down: { x: canvas_nom_width-90, y: buttons_y, iconSrc: 'arrow-down.svg', visible: true },
+        boost: { x: canvas_nom_width/2-20, y: buttons_y, iconSrc: 'rocket.svg', visible: true },
+        boost_disabled: { x: canvas_nom_width/2-20, y: buttons_y, iconSrc: 'rocket-disabled.svg', visible: false },
+        fullscreen: { x: canvas_nom_width - 50, y: 35, iconSrc: 'expand.svg', visible: true }, // Aggiunto pulsante fullscreen
+        fullscreen_exit: { x: canvas_nom_width - 50, y: 35, iconSrc: 'compress.svg', visible: false } // Pulsante per uscire dal fullscreen
     };    
 
     // Carica le icone SVG
@@ -186,10 +233,12 @@ function initGame() {
     }
 
 
+    const powerUpIcon = new Image();
+    powerUpIcon.src = 'bolt.svg';
+    
+    const powerDownIcon = new Image();
+    powerDownIcon.src = 'weight-hanging.svg';
 
-
-    // Chiamata a loadLevel per iniziare il gioco
-    loadLevel(1);
 
     // Funzione per iniziare la generazione dei semi
     function startSeedGeneration() {
@@ -219,59 +268,39 @@ function initGame() {
             canvas.height = containerWidth / aspectRatio;
         }
 
-        scaleFactor = canvas.width / 600;
+        scaleFactor = canvas.width / canvas_nom_width;
 
         drawCanvas();
     }
 
     function drawCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
         ctx.save();
         ctx.scale(scaleFactor, scaleFactor); // Applica la scala a tutto il contenuto
+        renderGameInterface();
+        renderParrot();
+        renderElementsToEat();
+        ctx.restore(); // Ripristina la scala originale
+    }
 
+
+    function renderGameInterface() {
         // Disegna lo sfondo (se lo sfondo è un'immagine)
         if (background) {
             ctx.drawImage(background, 0, 0, canvas_nom_width, canvas_nom_height);
         }
-    
-        // Disegna il pappagallo
-        ctx.save(); // Salva lo stato del contesto prima del flip
-        if (isFlipped) {
-            ctx.scale(-1, 1);
-            ctx.drawImage(parrotImage, -parrotX - 50, parrotY, 50, 50);
-        } else {
-            ctx.drawImage(parrotImage, parrotX, parrotY, 50, 50);
-        }
-        ctx.restore(); // Ripristina lo stato precedente per evitare di flip altre parti del canvas
-    
         // Disegna la top bar
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.fillRect(0, 0, canvas_nom_width, 30);
-
         // Renderizza il numero del livello
         renderLevel();
-
         // Renderizza lo score
         renderScore();
-
         // Gestisci la visualizzazione dello stato del boost
         renderBoostStatus();  // Chiama sempre questa funzione, che gestirà la condizione correttamente
-
-        currentSeeds.forEach(seed => {
-            ctx.drawImage(seed.image, seed.x, seed.y, 30, 30); // Disegna l'immagine del seme, scalata a 20x20px
-        });
-
-        // Disegna i frutti
-        currentFruits.forEach(fruit => {
-            ctx.drawImage(fruit.image, fruit.x, fruit.y, 30, 30);
-        });
-
-        // Disegna i biscotti
-        currentBiscuits.forEach(biscuit => {
-            ctx.drawImage(biscuit.image, biscuit.x, biscuit.y, 30, 30);
-        });
-    
+        // Visualizzazioni power up e power down
+        renderPowerUpStatus();  // Chiama la funzione per visualizzare il Power Up
+        renderPowerDownStatus();  // Chiama la funzione per visualizzare il Power Down
         // Disegna i pulsanti visibili
         for (const key in buttons) {
             const button = buttons[key];
@@ -285,9 +314,6 @@ function initGame() {
                 ctx.drawImage(button.image, button.x + iconPadding, button.y + iconPadding, iconWidth, iconHeight);
             }
         }
-        
-        ctx.restore(); // Ripristina la scala originale
-
     }
 
 
@@ -323,9 +349,74 @@ function initGame() {
             ctx.fillText(`${formattedCooldown}s`, canvas_nom_width - 10, textYPosition);
         } else if (boostState === 'disabled') {
             // Mostra solo l'icona se il boost è disabilitato manualmente
-            ctx.drawImage(rocketIcon, canvas_nom_height - 60, iconYPosition, 20, 20);
+            ctx.drawImage(rocketIcon, canvas_nom_width - 60, iconYPosition, 20, 20);
         }
         // Non disegnare nulla se boostState è 'enabled'
+    }
+
+    function renderPowerUpStatus() {
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#FFFFFF'; // Testo bianco
+        ctx.font = `16px Arial`; // Dimensione del testo
+    
+        const iconYPosition = 5; // Posizione Y per l'icona
+        const textYPosition = 20; // Posizione Y per il testo
+    
+        if (powerUpActive) {
+            const remainingTime = Math.ceil((powerUpEndTime - Date.now()) / 1000);
+            const formattedTime = remainingTime < 10 ? `0${remainingTime}` : remainingTime;
+    
+            ctx.drawImage(powerUpIcon, canvas_nom_width - 120, iconYPosition, 20, 20);
+            ctx.fillText(`${formattedTime}s`, canvas_nom_width - 70, textYPosition);
+        }
+    }
+
+
+    function renderPowerDownStatus() {
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#FFFFFF'; // Testo bianco
+        ctx.font = `16px Arial`; // Dimensione del testo
+    
+        const iconYPosition = 5; // Posizione Y per l'icona
+        const textYPosition = 20; // Posizione Y per il testo
+    
+        if (powerDownActive) {
+            const remainingTime = Math.ceil((powerDownEndTime - Date.now()) / 1000);
+            const formattedTime = remainingTime < 10 ? `0${remainingTime}` : remainingTime;
+    
+            ctx.drawImage(powerDownIcon, canvas_nom_width - 120, iconYPosition, 20, 20);
+            ctx.fillText(`${formattedTime}s`, canvas_nom_width - 70, textYPosition);
+        }
+    }
+
+
+    function renderParrot() {
+        // Disegna il pappagallo
+        ctx.save(); // Salva lo stato del contesto prima del flip
+        if (isFlipped) {
+            ctx.scale(-1, 1);
+            ctx.drawImage(parrotImage, -parrotX - 50, parrotY, 50, 50);
+        } else {
+            ctx.drawImage(parrotImage, parrotX, parrotY, 50, 50);
+        }
+        ctx.restore(); // Ripristina lo stato precedente per evitare di flip altre parti del canvas
+    }
+
+
+    function renderElementsToEat() {
+        currentSeeds.forEach(seed => {
+            ctx.drawImage(seed.image, seed.x, seed.y, 30, 30); // Disegna l'immagine del seme, scalata a 20x20px
+        });
+
+        // Disegna i frutti
+        currentFruits.forEach(fruit => {
+            ctx.drawImage(fruit.image, fruit.x, fruit.y, 30, 30);
+        });
+
+        // Disegna i biscotti
+        currentBiscuits.forEach(biscuit => {
+            ctx.drawImage(biscuit.image, biscuit.x, biscuit.y, 30, 30);
+        });
     }
     
 
@@ -432,27 +523,116 @@ function initGame() {
 
     function activatePowerUp(fruitType) {
         console.log(`Power Up activated by eating ${fruitType}`);
-        // Aggiungi qui la logica del Power Up
+        
+        let powerUpDuration;
+        if (fruitType === 1) {
+            powerUpDuration = settings.powerUp.duration1 * 1000;
+        } else if (fruitType === 2) {
+            powerUpDuration = settings.powerUp.duration2 * 1000;
+        } else if (fruitType === 3) {
+            powerUpDuration = settings.powerUp.duration3 * 1000;
+        }
+        const speedMultiplier = settings.powerUp.speedMultiplier;
+    
+        if (powerDownActive) {
+            // Se è attivo un Power Down, disattiva il Power Down e torna alle condizioni normali
+            deactivatePowerDown();
+        } else if (powerUpActive) {
+            // Se un Power Up è già attivo, estende la durata del Power Up esistente
+            powerUpEndTime += powerUpDuration;
+        } else {
+            // Altrimenti, avvia un nuovo Power Up
+            powerUpActive = true;
+            speed =  settings.game.speed * speedMultiplier;
+            powerUpEndTime = Date.now() + powerUpDuration;
+            startPowerUpCountdown();
+        }
+    }
+    
+
+
+    function startPowerUpCountdown() {
+        const interval = setInterval(() => {
+            const remainingTime = Math.ceil((powerUpEndTime - Date.now()) / 1000);
+            if (remainingTime <= 0 || powerDownActive) {
+                clearInterval(interval);
+                deactivatePowerUp();
+            }
+            drawCanvas();
+        }, 1000);
+    }
+
+
+    function deactivatePowerUp() {
+        powerUpActive = false;
+        speed = settings.game.speed;
+        drawCanvas();
     }
     
     function activatePowerDown(biscuitType) {
         console.log(`Power Down activated by eating ${biscuitType}`);
-        // Aggiungi qui la logica del Power Down
+        
+        let powerDownDuration;
+        if (biscuitType === 1) {
+            powerDownDuration = settings.powerDown.duration1 * 1000;
+        } else if (biscuitType === 2) {
+            powerDownDuration = settings.powerDown.duration2 * 1000;
+        } else if (biscuitType === 3) {
+            powerDownDuration = settings.powerDown.duration3 * 1000;
+        }
+        const speedMultiplier = settings.powerDown.speedMultiplier;
+    
+        if (powerUpActive) {
+            // Se è attivo un Power Up, disattiva il Power Up e avvia il Power Down
+            deactivatePowerUp();
+            powerDownActive = true;
+            speed =  settings.game.speed * speedMultiplier;
+            powerDownEndTime = Date.now() + powerDownDuration;
+            disableBoost('power_down'); // Disabilita il boost solo durante il Power Down
+            startPowerDownCountdown();
+        } else if (powerDownActive) {
+            // Se un Power Down è già attivo, estende la durata del Power Down esistente
+            powerDownEndTime += powerDownDuration;
+        } else {
+            // Altrimenti, avvia un nuovo Power Down
+            powerDownActive = true;
+            speed =  settings.game.speed * speedMultiplier;
+            powerDownEndTime = Date.now() + powerDownDuration;
+            disableBoost('power_down'); // Disabilita il boost solo durante il Power Down
+            startPowerDownCountdown();
+        }
+    }
+
+
+    function startPowerDownCountdown() {
+        const interval = setInterval(() => {
+            const remainingTime = Math.ceil((powerDownEndTime - Date.now()) / 1000);
+            if (remainingTime <= 0 || powerUpActive) {
+                clearInterval(interval);
+                deactivatePowerDown();
+            }
+            drawCanvas();
+        }, 1000);
+    }
+    
+    function deactivatePowerDown() {
+        powerDownActive = false;
+        speed = settings.game.speed;
+        enableBoost('power_down'); // Riabilita il boost
+        drawCanvas();
     }
 
 
     function calculateSeedPoints(seedType) {
         let basePoints = settings.seed.points[seedType];
-        const gameState = settings.game.state;
-    
-        if (gameState === 'power_up') {
-            return basePoints * 2;
-        } else if (gameState === 'power_down') {
-            return Math.floor(basePoints / 2);
-        } else {
-            return basePoints;
+        if (powerUpActive) {
+            return basePoints * 2;  // Raddoppia il punteggio durante il Power Up
+        } else if (powerDownActive) {
+            return Math.ceil(basePoints / 2);  // Dimezza il punteggio durante il Power Down
         }
+        return basePoints;
     }
+
 
     function updatePosition() {
         if (moveDirection) {
@@ -474,10 +654,10 @@ function initGame() {
             }
 
             // Confini del canvas
-            if (parrotX < 0) parrotX = 0;
-            if (parrotX + 50 > 600) parrotX = 600 - 50;
-            if (parrotY < 0) parrotY = 0;
-            if (parrotY + 50 > 400) parrotY = 400 - 50;
+            if (parrotX < parrot_move_xMin) parrotX = parrot_move_xMin;
+            if (parrotX + 50 > parrot_move_xMax) parrotX = parrot_move_xMax - 50;
+            if (parrotY < parrot_move_yMin) parrotY = parrot_move_yMin;
+            if (parrotY + 50 > parrot_move_yMax) parrotY = parrot_move_yMax - 50;
 
             checkSeedCollision(); // Controlla la collisione dopo ogni movimento
             drawCanvas();
@@ -499,13 +679,14 @@ function initGame() {
         const x = (event.clientX - rect.left) / scaleFactor;
         const y = (event.clientY - rect.top) / scaleFactor;
     
-        // Verifica se il click è su uno dei pulsanti di movimento o boost
         for (const key in buttons) {
             const button = buttons[key];
             if (x > button.x && x < button.x + (button.width || buttonSize) &&
                 y > button.y && y < button.y + (button.height || buttonSize)) {
-                if (key === 'boost') {
-                    if (boostEnabled) boostToFurthestSeed(); // Esegui boost
+                if (key === 'boost' && boostEnabled) {
+                    boostToFurthestSeed(); // Esegui boost
+                } else if (key === 'fullscreen' || key === 'fullscreen_exit') {
+                    toggleFullscreen(); // Gestisci il fullscreen
                 } else {
                     startMovement(key); // Muovi il pappagallo
                 }
@@ -561,6 +742,9 @@ function initGame() {
                 break;
             case ' ':
                 if (boostEnabled) boostToFurthestSeed(); // Esegui boost con SPACE
+                break;
+            case 'F':
+                toggleFullscreen();
                 break;
         }
     }
@@ -1094,17 +1278,23 @@ function initGame() {
         settings.level = { ...default_settings.level, ...level.settings.level };
         settings.fruit = { ...default_settings.fruit, ...level.settings.fruit };
         settings.biscuit = { ...default_settings.biscuit, ...level.settings.biscuit };
+        settings.powerUp = { ...default_settings.powerUp, ...level.settings.powerUp };
+        settings.powerDown = { ...default_settings.powerDown, ...level.settings.powerDown };
         
         currentLevelState.levelNumber = levelNumber;
         currentLevelState.levelPoints = 0;
         currentLevelState.seedsCollected = 0;
         currentLevelState.actionStarted = false; // Azzera il flag quando si carica un nuovo livello
+
+        speed = settings.game.speed;
     
         // Aggiungi gli event listener necessari per il gioco
         addGameEventListeners();
 
         resizeCanvas();
     }
+
+    
 
     function endLevel() {
         // Rimuovi gli event listener
@@ -1118,6 +1308,23 @@ function initGame() {
         // Altre operazioni di fine livello se necessarie
        
     }
+
+
+
+    // Funzione per gestire il click del pulsante fullscreen
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            enterFullscreen();
+            buttons.fullscreen.visible = false;
+            buttons.fullscreen_exit.visible = true;
+            drawCanvas();
+        } else {
+            exitFullscreen();
+            buttons.fullscreen.visible = true;
+            buttons.fullscreen_exit.visible = false;
+            drawCanvas();
+        }
+    }
     
 
     loadLevel(1); // Carica il livello 1 all'inizio del gioco
@@ -1126,12 +1333,17 @@ function initGame() {
 }
 
 
-
-
-
-
+// Funzione per il rilevamento del dispositivo mobile e attivazione del fullscreen
+function detectMobileAndFullscreen() {
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        enterFullscreen();
+    }
+}
 
 
 // Avvio del gioco
 initGame();
+
+// Aggiunta della chiamata per rilevare il dispositivo e attivare il fullscreen se necessario
+detectMobileAndFullscreen();
 
