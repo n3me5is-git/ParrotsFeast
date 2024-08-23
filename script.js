@@ -3,10 +3,14 @@ const ctx = canvas.getContext('2d');
 let background; // Variabile globale per l'immagine di sfondo
 const canvas_nom_width = 700;
 const canvas_nom_height = 400;
+const canvas_resolution_multiplier = 5;     // Increase the definition
 const parrot_move_xMin = 25;
 const parrot_move_xMax = canvas_nom_width-25;
 const parrot_move_yMin = 27;
 const parrot_move_yMax = canvas_nom_height-50;
+
+canvas.height = canvas_nom_height * canvas_resolution_multiplier;
+canvas.width = canvas_nom_width * canvas_resolution_multiplier;
 
 
 // Impostazioni di gioco inglobate direttamente nel codice
@@ -130,19 +134,16 @@ function enterFullscreen() {
     }
 }
 
-// Funzione per uscire dalla modalità fullscreen
 function exitFullscreen() {
     if (document.exitFullscreen) {
         document.exitFullscreen();
-    } else if (document.mozCancelFullScreen) { // Firefox
-        document.mozCancelFullScreen();
-    } else if (document.webkitExitFullscreen) { // Chrome, Safari, Opera
+    } else if (document.webkitExitFullscreen) { 
         document.webkitExitFullscreen();
-    } else if (document.msExitFullscreen) { // IE/Edge
+    } else if (document.msExitFullscreen) { 
         document.msExitFullscreen();
     }
+    document.body.classList.remove('fullscreen-active');
 }
-
 
 
 
@@ -153,7 +154,6 @@ function initGame() {
     let speed = 5;
     let moveDirection = null;
     let isFlipped = false;
-    let scaleFactor = 1;
     let boostEnabled = true;
     let boostState = 'enabled'; // Valori possibili: 'enabled', 'cooldown', 'disabled'
     let boostCooldown = 0; // Variabile globale per tenere traccia del countdown
@@ -213,14 +213,14 @@ function initGame() {
 
     const buttonSize = 40;
     const iconPadding = 8;
-    const buttons_y = canvas_nom_height-60;
+    const buttons_y = canvas_nom_height-80;
     const buttons = {
-        left: { x: 60, y: buttons_y, iconSrc: 'arrow-left.svg', visible: true },
-        right: { x: 160, y: buttons_y, iconSrc: 'arrow-right.svg', visible: true },
-        up: { x: canvas_nom_width-90, y: buttons_y-90, iconSrc: 'arrow-up.svg', visible: true },
-        down: { x: canvas_nom_width-90, y: buttons_y, iconSrc: 'arrow-down.svg', visible: true },
-        boost: { x: canvas_nom_width/2-20, y: buttons_y, iconSrc: 'rocket.svg', visible: true },
-        boost_disabled: { x: canvas_nom_width/2-20, y: buttons_y, iconSrc: 'rocket-disabled.svg', visible: false },
+        left: { x: 60, y: buttons_y, iconSrc: 'arrow-left.svg', width: 60, height: 60, visible: true },
+        right: { x: 160, y: buttons_y, iconSrc: 'arrow-right.svg', width: 60, height: 60, visible: true },
+        up: { x: canvas_nom_width-90, y: buttons_y-90, iconSrc: 'arrow-up.svg', width: 60, height: 60, visible: true },
+        down: { x: canvas_nom_width-90, y: buttons_y, iconSrc: 'arrow-down.svg', width: 60, height: 60, visible: true },
+        boost: { x: canvas_nom_width/2-20, y: buttons_y, iconSrc: 'rocket.svg', width: 60, height: 60, visible: true },
+        boost_disabled: { x: canvas_nom_width/2-20, y: buttons_y, iconSrc: 'rocket-disabled.svg', width: 60, height: 60, visible: false },
         fullscreen: { x: canvas_nom_width - 50, y: 35, iconSrc: 'expand.svg', visible: true }, // Aggiunto pulsante fullscreen
         fullscreen_exit: { x: canvas_nom_width - 50, y: 35, iconSrc: 'compress.svg', visible: false } // Pulsante per uscire dal fullscreen
     };    
@@ -252,31 +252,14 @@ function initGame() {
 
 
 
-
     function resizeCanvas() {
-        const container = document.getElementById('game-container');
-        const aspectRatio = 3 / 2;
-
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
-
-        if (containerWidth / containerHeight > aspectRatio) {
-            canvas.height = containerHeight;
-            canvas.width = containerHeight * aspectRatio;
-        } else {
-            canvas.width = containerWidth;
-            canvas.height = containerWidth / aspectRatio;
-        }
-
-        scaleFactor = canvas.width / canvas_nom_width;
-
         drawCanvas();
     }
 
     function drawCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
-        ctx.scale(scaleFactor, scaleFactor); // Applica la scala a tutto il contenuto
+        ctx.scale(canvas.width/canvas_nom_width, canvas.height/canvas_nom_height); // Applica la scala a tutto il contenuto
         renderGameInterface();
         renderParrot();
         renderElementsToEat();
@@ -675,25 +658,65 @@ function initGame() {
     }
 
     function handleCanvasClick(event) {
-        const rect = canvas.getBoundingClientRect();
-        const x = (event.clientX - rect.left) / scaleFactor;
-        const y = (event.clientY - rect.top) / scaleFactor;
-    
+        const container = document.getElementById('gameCanvas');
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+        let scaleFactorX = containerWidth / canvas_nom_width;
+        let scaleFactorY = containerHeight / canvas_nom_height;
+        // Calcolo la dimensione delle barre quando si scala
+        const aspectRatio = canvas_nom_width / canvas_nom_height; 
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        let canvasWidth, canvasHeight;
+        let barWidth = 0, barHeight = 0;
+        let scaleFactor;
+        if (windowWidth / windowHeight > aspectRatio) {
+            // La finestra è più larga, calcoliamo la larghezza del canvas basata sull'altezza
+            canvasHeight = windowHeight;
+            canvasWidth = canvasHeight * aspectRatio;
+            barWidth = (windowWidth - canvasWidth) / 2;
+        } else {
+            // La finestra è più alta, calcoliamo l'altezza del canvas basata sulla larghezza
+            canvasWidth = windowWidth;
+            canvasHeight = canvasWidth / aspectRatio;
+            barHeight = (windowHeight - canvasHeight) / 2;
+        }
+        // Calcolo il fattore di scala da usare 
+        if (barHeight > 0) {
+            scaleFactor = scaleFactorX;
+        } else if (barWidth > 0) {
+            scaleFactor = scaleFactorY;
+        }
+        // Calcola le coordinate del click relative al canvas
+        const x = (event.clientX - barWidth) / scaleFactor;
+        const y = (event.clientY - barHeight) / scaleFactor;
+        // console.log("Bar Width:", barWidth);
+        // console.log("Bar Height:", barHeight);
+        // console.log("Original click coordinates:", { clientX: event.clientX, clientY: event.clientY });
+        // console.log("Scaled click coordinates:", { x: x, y: y });
+        // console.log("Scale factors:", {scaleFactorX: scaleFactorX, scaleFactorY: scaleFactorY, scaleFactor: scaleFactor});
         for (const key in buttons) {
             const button = buttons[key];
+            // console.log(`Checking button ${key} at:`, { x: button.x, y: button.y, width: button.width || buttonSize, height: button.height || buttonSize });
             if (x > button.x && x < button.x + (button.width || buttonSize) &&
                 y > button.y && y < button.y + (button.height || buttonSize)) {
+                console.log(`Button ${key} clicked.`);
                 if (key === 'boost' && boostEnabled) {
+                    console.log("Boost activated.");
                     boostToFurthestSeed(); // Esegui boost
                 } else if (key === 'fullscreen' || key === 'fullscreen_exit') {
+                    console.log("Fullscreen toggled.");
                     toggleFullscreen(); // Gestisci il fullscreen
                 } else {
+                    console.log("Movement started:", key);
                     startMovement(key); // Muovi il pappagallo
                 }
                 return;
             }
         }
+        console.log("No button was clicked.");
     }
+    
 
 
     function addGameEventListeners() {
@@ -706,8 +729,6 @@ function initGame() {
         canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
         canvas.addEventListener('touchend', handleCanvasRelease, { passive: true });
     }
-
-    window.addEventListener('resize', resizeCanvas);
 
 
     function removeGameEventListeners() {
@@ -723,6 +744,8 @@ function initGame() {
     function handleTouchStart(event) {
         event.preventDefault(); // Previene il menu contestuale
         handleCanvasClick(event.touches[0]);
+        // Aggiunta della chiamata per rilevare il dispositivo e attivare il fullscreen se necessario
+        // detectMobileAndFullscreen();
     }
 
 
@@ -1226,6 +1249,10 @@ function initGame() {
 
     // Event listener per la dimensione della finestra
     window.addEventListener('resize', resizeCanvas);
+    document.addEventListener('fullscreenchange', resizeCanvas);
+    document.addEventListener('webkitfullscreenchange', resizeCanvas);
+    document.addEventListener('mozfullscreenchange', resizeCanvas);
+    document.addEventListener('MSFullscreenChange', resizeCanvas);
 
     // Prevenzione del menu contestuale
     canvas.addEventListener('contextmenu', (event) => {
@@ -1313,7 +1340,7 @@ function initGame() {
 
     // Funzione per gestire il click del pulsante fullscreen
     function toggleFullscreen() {
-        if (!document.fullscreenElement) {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
             enterFullscreen();
             buttons.fullscreen.visible = false;
             buttons.fullscreen_exit.visible = true;
@@ -1344,6 +1371,4 @@ function detectMobileAndFullscreen() {
 // Avvio del gioco
 initGame();
 
-// Aggiunta della chiamata per rilevare il dispositivo e attivare il fullscreen se necessario
-detectMobileAndFullscreen();
 
