@@ -215,12 +215,12 @@ function initGame() {
     const iconPadding = 8;
     const buttons_y = canvas_nom_height-80;
     const buttons = {
-        left: { x: 60, y: buttons_y, iconSrc: 'arrow-left.svg', width: 60, height: 60, visible: true },
-        right: { x: 160, y: buttons_y, iconSrc: 'arrow-right.svg', width: 60, height: 60, visible: true },
-        up: { x: canvas_nom_width-90, y: buttons_y-90, iconSrc: 'arrow-up.svg', width: 60, height: 60, visible: true },
-        down: { x: canvas_nom_width-90, y: buttons_y, iconSrc: 'arrow-down.svg', width: 60, height: 60, visible: true },
-        boost: { x: canvas_nom_width/2-20, y: buttons_y, iconSrc: 'rocket.svg', width: 60, height: 60, visible: true },
-        boost_disabled: { x: canvas_nom_width/2-20, y: buttons_y, iconSrc: 'rocket-disabled.svg', width: 60, height: 60, visible: false },
+        left: { x: 20, y: buttons_y, iconSrc: 'arrow-left.svg', width: 60, height: 60, visible: true },
+        right: { x: 110, y: buttons_y, iconSrc: 'arrow-right.svg', width: 60, height: 60, visible: true },
+        up: { x: canvas_nom_width-80, y: buttons_y-80, iconSrc: 'arrow-up.svg', width: 60, height: 60, visible: true },
+        down: { x: canvas_nom_width-80, y: buttons_y, iconSrc: 'arrow-down.svg', width: 60, height: 60, visible: true },
+        boost: { x: canvas_nom_width-180, y: buttons_y, iconSrc: 'rocket.svg', width: 60, height: 60, visible: true },
+        boost_disabled: { x: canvas_nom_width-180, y: buttons_y, iconSrc: 'rocket-disabled.svg', width: 60, height: 60, visible: false },
         fullscreen: { x: canvas_nom_width - 50, y: 35, iconSrc: 'expand.svg', visible: true }, // Aggiunto pulsante fullscreen
         fullscreen_exit: { x: canvas_nom_width - 50, y: 35, iconSrc: 'compress.svg', visible: false } // Pulsante per uscire dal fullscreen
     };    
