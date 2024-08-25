@@ -1614,12 +1614,12 @@ function initGame() {
     
     function addViewEventListeners() {
         canvas.addEventListener('click', handleViewCanvasClick);
-        canvas.addEventListener('touchstart', handleViewCanvasClick, { passive: false });
+        canvas.addEventListener('touchstart', handleViewCanvasTouch, { passive: false });
     }
     
     function removeViewEventListeners() {
         canvas.removeEventListener('click', handleViewCanvasClick);
-        canvas.removeEventListener('touchstart', handleViewCanvasClick);
+        canvas.removeEventListener('touchstart', handleViewCanvasTouch);
     }
 
 
@@ -1664,7 +1664,6 @@ function initGame() {
     
     
     function handleViewCanvasClick(event) {
-        event.preventDefault(); // Previene il menu contestuale
         const container = document.getElementById('gameCanvas');
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
@@ -1713,6 +1712,14 @@ function initGame() {
             }
             console.log("No button was clicked.");
         }
+    }
+
+
+    function handleViewCanvasTouch(event) {
+        event.preventDefault(); // Previene il menu contestuale
+        handleViewCanvasClick(event.touches[0]);
+        // Aggiunta della chiamata per rilevare il dispositivo e attivare il fullscreen se necessario
+        // detectMobileAndFullscreen();
     }
     
 
