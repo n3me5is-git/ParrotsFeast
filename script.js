@@ -28,9 +28,14 @@ const default_settings = {
         difficulty: 5, // Valore di difficulty da 1 a 10
         minSeedDistance: 50, // Distanza minima tra semi in pixel
         points: {
-            seed1: 16,
+            seed1: 18,
             seed2: 14,
             seed3: 10
+        },
+        probabilities: {
+            seed1: 20, 
+            seed2: 30, 
+            seed3: 50  
         }
     },
     points: {
@@ -46,7 +51,7 @@ const default_settings = {
     game: {
         speed: 4,   // Velocità default pappagallo
         state: 'default', // Stato iniziale: "default", "power_up", "power_down"
-        musicVolume: 0.5
+        musicVolume: 0.6
     },
     fruit: {
         spawnIntervalMin: 20, // Minimo intervallo di tempo per la comparsa della frutta
@@ -92,37 +97,46 @@ const levels = {
     1: {
         background: 'background-level1.png',
         music: 'background-music1.mp3',
+        extraLevelCode: '',
         settings: {
             seed: {
-                maxCount: 5,
                 minDuration: 3,
                 maxDuration: 20,
                 difficulty: 5
-            },
-            boost: {
-                speed: 20,
-                cooldown: 30
             }
         }
     },
     2: {
         background: 'background-level2.png',
         music: 'background-music2.mp3',
+        extraLevelCode: '',
         settings: {
             seed: {
-                maxCount: 5,
                 minDuration: 3,
                 maxDuration: 20,
                 difficulty: 5
-            },
-            boost: {
-                speed: 20,
-                cooldown: 30
             }
         }
     },
-    // Aggiungi altri livelli qui
+    3: {
+        background: 'background-level3.png',
+        music: 'background-music3.mp3',
+        extraLevelCode: '',
+        settings: {
+            seed: {
+                minDuration: 3,
+                maxDuration: 20,
+                difficulty: 5
+            }
+        }
+    },
+    // Aggiungi altri livelli base qui
+
+    // Aggiungi altri livelli Extra qui
 };
+
+const base_game_end_level = 10;     // Tutti i livelli dopo il 10 sono Extra
+let modified_difficulty = 0;
 
 
 let currentLevelState = {
@@ -156,9 +170,10 @@ const views = {
             back: { x: 310, y: 292, width: 24, height: 24, visible: true, virtual: true },
             forward: { x: 440, y: 292, width: 24, height: 24, visible: true, virtual: true },
             startGame: { x: 498, y: 280, width: 110, height: 50, visible: true, virtual: true },
-            // scores: { x: 510, y: 168, width: 110, height: 30, visible: true, virtual: true },
-            fullscreen: { x: canvas_nom_width - 40, y: 10, width: 30, height: 30, visible: true, icon: 'expand.svg', virtual: false },
-            fullscreen_exit: { x: canvas_nom_width - 40, y: 10, width: 30, height: 30, visible: false, icon: 'compress.svg', virtual: false }
+            scores: { x: 510, y: 168, width: 110, height: 30, visible: true, virtual: true },
+            levelField: { x: 360, y: 293, width: 47, height: 23, visible: true, virtual: true },
+            fullscreen: { x: canvas_nom_width - 45, y: 15, width: 35, height: 35, visible: true, icon: 'expand.svg', virtual: false },
+            fullscreen_exit: { x: canvas_nom_width - 45, y: 15, width: 35, height: 35, visible: false, icon: 'compress.svg', virtual: false }
         }
     },
     endLevelView: {
@@ -169,8 +184,8 @@ const views = {
             replayLevel: { x: 313, y: 130, width: 40, height: 40, visible: true, virtual: true },
             nextLevel: { x: 401, y: 114, width: 54, height: 66, visible: true, virtual: true },
             backToMenu: { x: 639, y: 330, width: 41, height: 34, visible: true, virtual: true },
-            fullscreen: { x: canvas_nom_width - 40, y: 10, width: 30, height: 30, visible: true, icon: 'expand.svg', virtual: false },
-            fullscreen_exit: { x: canvas_nom_width - 40, y: 10, width: 30, height: 30, visible: false, icon: 'compress.svg', virtual: false }
+            fullscreen: { x: canvas_nom_width - 45, y: 15, width: 35, height: 35, visible: true, icon: 'expand.svg', virtual: false },
+            fullscreen_exit: { x: canvas_nom_width - 45, y: 15, width: 35, height: 35, visible: false, icon: 'compress.svg', virtual: false }
         }
     },
     endLastLevelView: {
@@ -180,8 +195,8 @@ const views = {
         buttons: { 
             replayLevel: { x: 313, y: 130, width: 40, height: 40, visible: true, virtual: true },
             endGame: { x: 394, y: 110, width: 81, height: 81, visible: true, virtual: true }, 
-            fullscreen: { x: canvas_nom_width - 40, y: 10, width: 30, height: 30, visible: true, icon: 'expand.svg', virtual: false },
-            fullscreen_exit: { x: canvas_nom_width - 40, y: 10, width: 30, height: 30, visible: false, icon: 'compress.svg', virtual: false }
+            fullscreen: { x: canvas_nom_width - 45, y: 15, width: 35, height: 35, visible: true, icon: 'expand.svg', virtual: false },
+            fullscreen_exit: { x: canvas_nom_width - 45, y: 15, width: 35, height: 35, visible: false, icon: 'compress.svg', virtual: false }
         }
     },
     endGameView: {
@@ -190,8 +205,22 @@ const views = {
         loadSound: 'background-music-endgame.mp3',
         buttons: { 
             backToMenu: { x: 630, y: 280, width: 45, height: 40, visible: true, virtual: true }, // Pulsante virtuale
-            fullscreen: { x: canvas_nom_width - 40, y: 10, width: 30, height: 30, visible: true, icon: 'expand.svg', virtual: false },
-            fullscreen_exit: { x: canvas_nom_width - 40, y: 10, width: 30, height: 30, visible: false, icon: 'compress.svg', virtual: false }
+            fullscreen: { x: canvas_nom_width - 45, y: 15, width: 35, height: 35, visible: true, icon: 'expand.svg', virtual: false },
+            fullscreen_exit: { x: canvas_nom_width - 45, y: 15, width: 35, height: 35, visible: false, icon: 'compress.svg', virtual: false }
+        }
+    },
+    scoresView: {
+        name: 'scoresView',
+        background: 'scores_background.png', // Imposta l'immagine di sfondo per i punteggi
+        loadSound: 'boxing_bell.wav',
+        buttons: { 
+            toggleScoreModeTop: { x: 12, y: 16, width: 35, height: 35, visible: true, icon: 'button_top.png', virtual: false, simple: true }, // Mostra Top Scores
+            toggleScoreModeLast: { x: 12, y: 16, width: 35, height: 35, visible: false, icon: 'button_last.png', virtual: false, simple: true }, // Mostra Last Scores
+            sortByScore: { x: 291, y: 28, width: 20, height: 20, visible: true, virtual: true }, // Ordina per punteggio
+            sortByDate: { x: 416, y: 28, width: 20, height: 20, visible: true, virtual: true }, // Ordina per data
+            backToMenu: { x: 639, y: 330, width: 41, height: 34, visible: true, virtual: true },
+            fullscreen: { x: canvas_nom_width - 45, y: 15, width: 35, height: 35, visible: true, icon: 'expand.svg', virtual: false },
+            fullscreen_exit: { x: canvas_nom_width - 45, y: 15, width: 35, height: 35, visible: false, icon: 'compress.svg', virtual: false }
         }
     },
     // Aggiungi qui altre viste come endView, levelSummaryView, ecc.
@@ -199,6 +228,8 @@ const views = {
 
 // Variabile vista attuale
 let currentView;
+let orientationCheckDone = false;
+let fullscreenCheckDone = false;
 
 // Variabili di gioco, statistiche e altro
 let game = {
@@ -210,16 +241,29 @@ let game = {
 // Funzione per entrare in modalità fullscreen
 function enterFullscreen() {
     const elem = document.documentElement;
-    if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-    } else if (elem.mozRequestFullScreen) { // Firefox
-        elem.mozRequestFullScreen();
-    } else if (elem.webkitRequestFullscreen) { // Chrome, Safari, Opera
-        elem.webkitRequestFullscreen();
-    } else if (elem.msRequestFullscreen) { // IE/Edge
-        elem.msRequestFullscreen();
+    try {
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch((err) => {
+                console.warn('Unable to enter fullscreen mode:', err);
+            });
+        } else if (elem.mozRequestFullScreen) { // Firefox
+            elem.mozRequestFullScreen().catch((err) => {
+                console.warn('Unable to enter fullscreen mode:', err);
+            });
+        } else if (elem.webkitRequestFullscreen) { // Chrome, Safari, Opera
+            elem.webkitRequestFullscreen().catch((err) => {
+                console.warn('Unable to enter fullscreen mode:', err);
+            });
+        } else if (elem.msRequestFullscreen) { // IE/Edge
+            elem.msRequestFullscreen().catch((err) => {
+                console.warn('Unable to enter fullscreen mode:', err);
+            });
+        }
+    } catch (err) {
+        console.warn('Error while trying to enter fullscreen mode:', err);
     }
 }
+
 
 function exitFullscreen() {
     if (document.exitFullscreen) {
@@ -253,6 +297,8 @@ function initGame() {
     
     let score = 0;
     let currentSeeds = []; // Array per tenere traccia dei semi attivi
+    let scoresViewScoreMode = 'top';
+    let scoresViewOrderMode = 'points';
 
     const parrotImage = new Image();
     parrotImage.src = 'parrot.png';
@@ -383,6 +429,7 @@ function initGame() {
         renderPowerUpStatus();  // Chiama la funzione per visualizzare il Power Up
         renderPowerDownStatus();  // Chiama la funzione per visualizzare il Power Down
         // Disegna i pulsanti visibili
+        setFullscreenButtonsbyState();
         for (const key in game_buttons) {
             const button = game_buttons[key];
             if (button.visible) {
@@ -402,7 +449,14 @@ function initGame() {
         ctx.fillStyle = '#FFFFFF';
         ctx.font = `bold 16px Arial, sans-serif`;
         ctx.textAlign = 'left';
-        const levelText = `LV. ${currentLevelState.levelNumber}${currentLevelState.levelNumber < 10 ? ' ' : ''}`;
+        let levelText;
+        if (currentLevelState.levelNumber <= base_game_end_level) {
+            levels[game.selectedLevel].extraLevelCode
+            levelText = `LV. ${currentLevelState.levelNumber}${currentLevelState.levelNumber < 10 ? ' ' : ''}`;
+        } else {
+            let game_level = levels[currentLevelState.levelNumber].extraLevelCode;
+            levelText = `LV. ${game_level}${game_level < 10 ? ' ' : ''}`;
+        }
         ctx.fillText(levelText, 10, 20);
     }
 
@@ -411,7 +465,7 @@ function initGame() {
         ctx.fillStyle = '#FFFFFF';
         ctx.font = `bold 16px Arial, sans-serif`; // Il font viene scalato automaticamente con il contesto
         ctx.textAlign = 'left';
-        ctx.fillText(`Tot. Score: ${score}`, 60, 20); // Le coordinate sono relative al contesto scalato
+        ctx.fillText(`Tot. Score: ${score}`, 100, 20); // Le coordinate sono relative al contesto scalato
     }
 
     function renderLevelCountdown() {
@@ -932,9 +986,18 @@ function initGame() {
     
         const { x, y } = getRandomPosition(canvas_nom_width, canvas_nom_height);
         const duration = calculateSeedDuration(settings.seed.minDuration, settings.seed.maxDuration, settings.seed.difficulty, { x, y });
-    
-        // Seleziona una delle immagini di semi in modo casuale
-        const randomSeedImage = seedImages[Math.floor(Math.random() * seedImages.length)];
+
+        // Genera un numero casuale da 1 a 100 per determinare quale seme generare
+        const randomNum = Math.floor(Math.random() * 100) + 1;
+        let seedImageIndex;
+        if (randomNum <= settings.seed.probabilities.seed1) {
+            seedImageIndex = 0; // seed1
+        } else if (randomNum <= settings.seed.probabilities.seed1 + settings.seed.probabilities.seed2) {
+            seedImageIndex = 1; // seed2
+        } else {
+            seedImageIndex = 2; // seed3
+        }
+        const randomSeedImage = seedImages[seedImageIndex];
     
         const seed = {
             x,
@@ -1126,14 +1189,11 @@ function initGame() {
         const maxX = settings.seed.xSeedMax;
         const minY = settings.seed.ySeedMin;
         const maxY = settings.seed.ySeedMax;
-    
         const centerX = parrotX + 25; // Centro del pappagallo sull'asse X
         const centerY = parrotY + 25; // Centro del pappagallo sull'asse Y
-    
         let chosenPosition;
         let attempts = 0;
         let currentDifficulty = settings.seed.difficulty; // Usa una variabile locale per la difficulty
-    
         do {
             // console.log(`Attempt ${attempts + 1}, Current Difficulty: ${currentDifficulty}`);
     
@@ -1145,16 +1205,12 @@ function initGame() {
                 const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
                 positions.push({ x, y, distance });
             }
-    
             // Ordina le posizioni in base alla distanza dal pappagallo
             positions.sort((a, b) => a.distance - b.distance);
-    
             // console.log(`Positions generated and sorted: ${positions.length} positions`);
-    
             // Determina lo slot di partenza e la finestra in base alla difficulty
             const slotSize = Math.floor(settings.seed.N / 10);
             let start, end;
-    
             if (currentDifficulty === 1) {
                 start = 0;
                 end = 2 * slotSize;
@@ -1177,29 +1233,22 @@ function initGame() {
                 start = 4 * slotSize;
                 end = 7 * slotSize;
             } else if (currentDifficulty === 8) {
-                start = 7 * slotSize;
-                end = 10 * slotSize;
+                start = 6 * slotSize;
+                end = 9 * slotSize;
             } else if (currentDifficulty === 9) {
-                start = 8 * slotSize;
-                end = 10 * slotSize;
+                start = 7 * slotSize;
+                end = 9 * slotSize;
             } else if (currentDifficulty === 10) {
-                start = 9 * slotSize;
-                end = 10 * slotSize;
+                start = 8 * slotSize;
+                end = 9 * slotSize;
             }
-            
-    
             // console.log(`Using positions from slot ${start} to ${end}`);
-    
             // Crea uno slice dell'array con le posizioni considerate
             const consideredPositions = positions.slice(start, end);
-    
             // console.log(`Considered Positions: ${consideredPositions.length}`);
-    
             // Seleziona una posizione random tra quelle considerate
             chosenPosition = consideredPositions[Math.floor(Math.random() * consideredPositions.length)];
-    
             // console.log(`Chosen Position: (${chosenPosition.x}, ${chosenPosition.y})`);
-    
             // Controlla se la posizione è troppo vicina a un seme esistente
             if (currentSeeds.some(seed => {
                 const dist = Math.sqrt(Math.pow(seed.x - chosenPosition.x, 2) + Math.pow(seed.y - chosenPosition.y, 2));
@@ -1217,11 +1266,8 @@ function initGame() {
             } else {
                 break; // Esci dal ciclo se una posizione idonea è stata trovata
             }
-    
         } while (!chosenPosition);
-    
         // console.log(`Final Chosen Position: (${chosenPosition.x}, ${chosenPosition.y})`);
-    
         return { x: chosenPosition.x, y: chosenPosition.y };
     }
     
@@ -1234,7 +1280,7 @@ function initGame() {
         const distance = Math.sqrt(Math.pow(seedPosition.x - centerX, 2) + Math.pow(seedPosition.y - centerY, 2));
         const maxDistance = Math.sqrt(Math.pow(canvas_nom_width, 2) + Math.pow(canvas_nom_height, 2));
     
-        if (distance > (2/3) * maxDistance && difficulty >= 7) {
+        if (distance > (1/2) * maxDistance && difficulty >= 7) {
             difficulty = Math.max(1, difficulty - 1);
         }
     
@@ -1465,7 +1511,7 @@ function initGame() {
                 playSound('end_level_gong');
                 // Carica la schermata di riepilogo dopo 1 secondo
                 setTimeout(() => {
-                    const isLastLevel = currentLevelState.levelNumber >= Object.keys(levels).length;
+                    const isLastLevel = currentLevelState.levelNumber == Math.min(Object.keys(levels).length, base_game_end_level);
                     if (isLastLevel) {
                         loadView('endLastLevelView'); // Carica la schermata di fine livello per l'ultimo livello
                     } else {
@@ -1527,6 +1573,12 @@ function initGame() {
         currentLevelState.levelTimeRemaining = settings.level.duration;
         currentLevelState.actionStarted = false; // Azzera il flag quando si carica un nuovo livello
         speed = settings.game.speed;
+        if (currentLevelState.levelNumber > base_game_end_level) {
+            score = 0;
+        }
+        if (modified_difficulty > 0) {
+            settings.seed.difficulty = modified_difficulty;
+        }
         // Aggiungi gli event listener necessari per il gioco
         addGameEventListeners();
         // Resize del canvas
@@ -1559,8 +1611,10 @@ function initGame() {
             backgroundMusic.pause();
             backgroundMusic.currentTime = 0; // Resetta la traccia all'inizio
         }
-        // Salva il punteggio e le statistiche
-        saveScoreToDatabase();
+        // Salva il punteggio e le statistiche solo per i livelli standard e quando non è stata modificata la difficulty di default
+        if (currentLevelState.levelNumber <= base_game_end_level && modified_difficulty == 0) {
+            saveScoreToDatabase();
+        }
     }
 
 
@@ -1577,6 +1631,17 @@ function initGame() {
             game_buttons.fullscreen.visible = true;
             game_buttons.fullscreen_exit.visible = false;
             drawCanvas();
+        }
+    }
+
+
+    function setFullscreenButtonsbyState() {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+            game_buttons.fullscreen.visible = true;
+            game_buttons.fullscreen_exit.visible = false;
+        } else {
+            game_buttons.fullscreen.visible = false;
+            game_buttons.fullscreen_exit.visible = true;
         }
     }
 
@@ -1634,6 +1699,7 @@ function initGame() {
             ctx.drawImage(background, 0, 0, canvas_nom_width, canvas_nom_height);
         }
         // Disegna i pulsanti non virtuali
+        setFullscreenButtonsbyStateView();
         for (const key in view.buttons) {
             const button = view.buttons[key];
             if (!button.virtual && button.visible) {
@@ -1657,6 +1723,8 @@ function initGame() {
             drawEndLevelViewSpecificElements();
         } else if (viewname === 'endGameView') {
             drawEndGameViewSpecificElements();
+        } else if (viewname === 'scoresView') {
+            drawScoresViewSpecificElements();
         }
         // (es. testi dinamici)
         ctx.restore();
@@ -1698,6 +1766,11 @@ function initGame() {
         const y = (event.clientY - barHeight) / scaleFactor;
         console.log("Original click coordinates:", { clientX: event.clientX, clientY: event.clientY });
         console.log("Scaled click coordinates:", { x: x, y: y });
+        // Check versione mobile: orizzontale e fullscreen
+        if (!checkOrientationAndActivateFullscreen()) {
+            return;
+        };
+        drawView(currentView);
         // Check pulsante premuto
         const view = views[currentView];
         if (view) {
@@ -1710,6 +1783,9 @@ function initGame() {
                     return;
                 }
             }
+            if (!checkActivateFullscreen()) {
+                return;
+            };
             console.log("No button was clicked.");
         }
     }
@@ -1733,6 +1809,8 @@ function initGame() {
             processEndLastLevelViewActions(key);
         } else if (viewname === 'endGameView') {
             processEndGameViewActions(key);
+        } else if (viewname === 'scoresView') {
+            processScoresViewActions(key);
         }
         // Aggiungi qui altre funzioni per altre view
     }
@@ -1754,9 +1832,18 @@ function initGame() {
     function processStartViewActions(key) {
         switch (key) {
             case 'changeName':
+                // Imposta il massimo numero di caratteri permessi
+                const maxNameLength = 20; 
+                const view = views[currentView];
+                let not_in_fullscreen = !document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement;
                 // Implementa la logica per cambiare il nome del giocatore
-                let playerName = prompt("Inserisci il tuo nome:");
+                let playerName = prompt("Insert your name:");
                 if (playerName) {
+                    // Trunca il nome se supera la lunghezza massima
+                    if (playerName.length > maxNameLength) {
+                        playerName = playerName.substring(0, maxNameLength);
+                        alert(`Name too long. It has been truncated to: ${playerName}`);
+                    }
                     game.playerName = playerName;
                     drawView('startView'); // Rerenderizza la schermata con il nuovo nome
                 }
@@ -1773,6 +1860,9 @@ function initGame() {
                     drawView('startView');
                 }
                 break;
+            case 'levelField':
+                askChangeDifficulty();
+                break;
             case 'startGame':
                 endView();
                 score = 0;
@@ -1781,6 +1871,10 @@ function initGame() {
                 }
                 loadLevel(game.selectedLevel);
                 break;
+            case 'scores':
+                endView();
+                loadView('scoresView');
+                break;
             case 'fullscreen':
                 toggleFullscreenView();
                 break;
@@ -1788,6 +1882,31 @@ function initGame() {
                 toggleFullscreenView();
                 break;
         }
+        if (key != "changeName") {
+            if (!checkActivateFullscreen()) {
+                return;
+            };
+        }
+    }
+
+
+    function askChangeDifficulty() {
+        let difficulty;
+        difficulty = prompt("Enter the difficulty level from 1 to 10. Enter 0 to return to the default difficulty:");
+        if (difficulty === null) {
+            return;  // Uscita in caso di annullamento
+        }
+        difficulty = parseInt(difficulty, 10);
+        if (isNaN(difficulty) || difficulty < 0 || difficulty > 10) {
+            alert("Error: allowed values are 0 to 10. Using default difficulty...");
+            difficulty = 0;
+        }
+        if (difficulty === 0) {
+            modified_difficulty = 0;  // Usa la difficoltà di default
+        } else {
+            modified_difficulty = difficulty;  // Usa la difficoltà inserita dall'utente
+        }
+        console.log(`Difficulty changed to: ${modified_difficulty}`);
     }
 
 
@@ -1801,6 +1920,7 @@ function initGame() {
             loadLevel(currentLevelState.levelNumber + 1); // Passa al livello successivo
         } else if (key === 'backToMenu') {
             endView();
+            modified_difficulty = 0;
             loadView('startView'); // Torna al menu iniziale
         } else if (key === 'fullscreen' || key === 'fullscreen_exit') {
             toggleFullscreenView(); // Gestisci il fullscreen
@@ -1814,6 +1934,7 @@ function initGame() {
             loadLevel(currentLevelState.levelNumber); // Rigioca l'ultimo livello
         } else if (key === 'endGame') {
             endView();
+            modified_difficulty = 0;
             loadView('endGameView'); 
         } else if (key === 'fullscreen' || key === 'fullscreen_exit') {
             toggleFullscreenView(); // Gestisci il fullscreen
@@ -1831,6 +1952,42 @@ function initGame() {
     }
 
 
+    function processScoresViewActions(key) {
+        switch (key) {
+            case 'toggleScoreModeTop':
+                scoresViewScoreMode = 'last';
+                views['scoresView'].buttons['toggleScoreModeTop'].visible = false;
+                views['scoresView'].buttons['toggleScoreModeLast'].visible = true;
+                drawView('scoresView');
+                break;
+            case 'toggleScoreModeLast':
+                scoresViewScoreMode = 'top';
+                views['scoresView'].buttons['toggleScoreModeTop'].visible = true;
+                views['scoresView'].buttons['toggleScoreModeLast'].visible = false;
+                drawView('scoresView');
+                break;
+            case 'sortByScore':
+                scoresViewOrderMode = 'points';
+                drawView('scoresView');
+                break;
+            case 'sortByDate':
+                scoresViewOrderMode = 'date';
+                drawView('scoresView');
+                break;
+            case 'backToMenu':
+                endView();
+                loadView('startView');
+                break;
+            case 'fullscreen':
+                toggleFullscreenView();
+                break;
+            case 'fullscreen_exit':
+                toggleFullscreenView();
+                break;
+        }
+    }
+
+
     function drawStartViewSpecificElements() {
         // Disegna il nome del giocatore e il livello selezionato
         ctx.fillStyle = '#000000';
@@ -1838,9 +1995,15 @@ function initGame() {
         ctx.textAlign = 'left';
         ctx.fillText(`${game.playerName || 'Insert Your Name'}`, 324, 247);
         ctx.fillStyle = '#000000';
-        ctx.font = 'bold 22px Bosk, Georgia, sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(`LV. ${game.selectedLevel}`, 356, 313);
+        if (game.selectedLevel <= base_game_end_level) {
+            ctx.font = 'bold 18px Bosk, Georgia, sans-serif';
+            ctx.fillText(`LV. ${game.selectedLevel}`, 353, 313);
+        } else {
+            ctx.font = 'bold 14px Bosk, Georgia, sans-serif';
+            ctx.fillText(`EL. ${levels[game.selectedLevel].extraLevelCode}`, 353, 310);
+        }
+        
     }  
 
 
@@ -1872,6 +2035,94 @@ function initGame() {
     }
 
 
+    function drawScoresViewSpecificElements() {
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'left';
+    
+        // Verifica se il playerName è definito, altrimenti utilizza "Anonymous"
+        let playerName = game.playerName || 'Anonymous';
+        let playerDetails = getPlayerScoreDetails(playerName);
+        let topScore = playerDetails ? playerDetails.highestScore : '- - -';
+        let topScoreDate = playerDetails ? formatTimestamp(playerDetails.highestScoreDate) : '- - -';
+        let lastScore = playerDetails ? playerDetails.lastScore : '- - -';
+        let lastScoreDate = playerDetails ? formatTimestamp(playerDetails.lastScoreDate) : '- - -';
+    
+        ctx.font = `bold 14px Bosk, Arial, sans-serif`;
+        ctx.fillText(`${playerName}`, 485, 75);
+        ctx.fillText(`${topScore}`, 558, 197);
+        ctx.fillText(`${topScoreDate}`, 558, 212);
+        ctx.fillText(`${lastScore}`, 558, 242);
+        ctx.fillText(`${lastScoreDate}`, 558, 259);
+    
+        // Carica i punteggi in base alla modalità corrente
+        const increment = 33;
+        const text_x = {
+            col1: 61,
+            col2: 230,
+            col3: 326
+        }
+        const text_y_start = 78;
+        const font_columns = {
+            col1: `bold 10px Bosk, Arial, sans-serif`,
+            col2: `bold 14px Bosk, Arial, sans-serif`,
+            col3: `bold 12px Bosk, Arial, sans-serif`
+        }
+        if (scoresViewScoreMode === 'top' && scoresViewOrderMode === 'points') {
+            const user_scores = getFormattedScores('topscore');
+            for (let i = 0; i < 10; i++) {
+                const entry = user_scores[i];
+                if (entry) {
+                    ctx.font = font_columns.col1;
+                    ctx.fillText(`${entry.playerName}`, text_x.col1, text_y_start + i * increment);
+                    ctx.font = font_columns.col2;
+                    ctx.fillText(`${entry.highestScore}`, text_x.col2, text_y_start + i * increment);
+                    ctx.font = font_columns.col3;
+                    ctx.fillText(`${formatTimestamp(entry.highestScoreDate)}`, text_x.col3, text_y_start + i * increment);
+                } 
+            }
+        } else if (scoresViewScoreMode === 'top' && scoresViewOrderMode === 'date') {
+            const user_scores = getFormattedScores('toptimestamp');
+            for (let i = 0; i < 10; i++) {
+                const entry = user_scores[i];
+                if (entry) {
+                    ctx.font = font_columns.col1;
+                    ctx.fillText(`${entry.playerName}`, text_x.col1, text_y_start + i * increment);
+                    ctx.font = font_columns.col2;
+                    ctx.fillText(`${entry.highestScore}`, text_x.col2, text_y_start + i * increment);
+                    ctx.font = font_columns.col3;
+                    ctx.fillText(`${formatTimestamp(entry.highestScoreDate)}`, text_x.col3, text_y_start + i * increment);
+                } 
+            }
+        } else if (scoresViewScoreMode === 'last' && scoresViewOrderMode === 'points') {
+            const user_scores = getFormattedScores('lastscore');
+            for (let i = 0; i < 10; i++) {
+                const entry = user_scores[i];
+                if (entry) {
+                    ctx.font = font_columns.col1;
+                    ctx.fillText(`${entry.playerName}`, text_x.col1, text_y_start + i * increment);
+                    ctx.font = font_columns.col2;
+                    ctx.fillText(`${entry.lastScore}`, text_x.col2, text_y_start + i * increment);
+                    ctx.font = font_columns.col3;
+                    ctx.fillText(`${formatTimestamp(entry.lastScoreDate)}`, text_x.col3, text_y_start + i * increment);
+                } 
+            }
+        } else if (scoresViewScoreMode === 'last' && scoresViewOrderMode === 'date') {
+            const user_scores = getFormattedScores('lasttimestamp');
+            for (let i = 0; i < 10; i++) {
+                const entry = user_scores[i];
+                if (entry) {
+                    ctx.font = font_columns.col1;
+                    ctx.fillText(`${entry.playerName}`, text_x.col1, text_y_start + i * increment);
+                    ctx.font = font_columns.col2;
+                    ctx.fillText(`${entry.lastScore}`, text_x.col2, text_y_start + i * increment);
+                    ctx.font = font_columns.col3;
+                    ctx.fillText(`${formatTimestamp(entry.lastScoreDate)}`, text_x.col3, text_y_start + i * increment);
+                } 
+            }
+        }
+    }
+
+
     function drawEndLevelViewSpecificElements() {
         ctx.fillStyle = '#000000'; // Colore nero    
         // Rendering delle informazioni
@@ -1888,13 +2139,10 @@ function initGame() {
         ctx.fillText(`${currentLevelState.fruitsCollectedType1} Units`, 300, 251);
         ctx.fillText(`${currentLevelState.fruitsCollectedType2} Units`, 300, 285);
         ctx.fillText(`${currentLevelState.fruitsCollectedType3} Units`, 300, 318);
-
         ctx.fillText(`${currentLevelState.biscuitsCollectedType1} Units`, 498, 251);
         ctx.fillText(`${currentLevelState.biscuitsCollectedType2} Units`, 498, 285);
         ctx.fillText(`${currentLevelState.biscuitsCollectedType3} Units`, 498, 318);
-
         ctx.fillText(`${currentLevelState.boostsUsed} Boosts`, 338, 370);
-
         // Verifica se il playerName è definito, altrimenti imposta "- - -"
         let topScore = "- - -";
         let topScoreDate = "- - -";
@@ -1939,6 +2187,18 @@ function initGame() {
             drawView(currentView);
         }
     }
+
+
+    function setFullscreenButtonsbyStateView() {
+        const view = views[currentView];
+        if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+            view.buttons.fullscreen.visible = true;
+            view.buttons.fullscreen_exit.visible = false;
+        } else {
+            view.buttons.fullscreen.visible = false;
+            view.buttons.fullscreen_exit.visible = true;
+        }
+    }
     
 
     function saveScoreToDatabase() {
@@ -1980,13 +2240,13 @@ function initGame() {
         let savedData = JSON.parse(localStorage.getItem(gameKey)) || [];
     
         switch (sortBy) {
-            case 'topscore':
+            case 'lastscore':
                 return savedData.sort((a, b) => b.score - a.score);
-            case 'highscore':
+            case 'topscore':
                 return savedData.sort((a, b) => b.highestScore - a.highestScore);
-            case 'hightimestamp':
-                return savedData.sort((a, b) => new Date(b.highestScoreDate) - new Date(a.highestScoreDate));
             case 'toptimestamp':
+                return savedData.sort((a, b) => new Date(b.highestScoreDate) - new Date(a.highestScoreDate));
+            case 'lasttimestamp':
                 return savedData.sort((a, b) => new Date(b.date) - new Date(a.date));
             default:
                 return savedData;
@@ -2024,6 +2284,38 @@ function initGame() {
             highestScoreDate: playerData.highestScoreDate
         };
     }
+
+
+    function checkOrientationAndActivateFullscreen() {
+        if (orientationCheckDone) return true; // Se il check è già stato fatto, esce dalla funzione
+        orientationCheckDone = true; // Imposta il flag per evitare che la funzione venga eseguita di nuovo
+        // Verifica se il dispositivo è mobile
+        const isMobile = /Mobi|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // Se il dispositivo è mobile e l'orientamento è verticale
+        if (isMobile) {
+            if (window.innerHeight > window.innerWidth) {
+                alert("For a better gaming experience, rotate your device to landscape mode and enter fullscreen.");
+            }
+        }
+        return false;
+    }
+
+
+    function checkActivateFullscreen() {
+        // if (fullscreenCheckDone) return true; // Se il check è già stato fatto, esce dalla funzione
+        // fullscreenCheckDone = true; // Imposta il flag per evitare che la funzione venga eseguita di nuovo
+        // Verifica se il dispositivo è mobile
+        const isMobile = /Mobi|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // Se il dispositivo è mobile e l'orientamento è verticale
+        if (isMobile) {
+            const view = views[currentView];
+            enterFullscreen();
+            view.buttons.fullscreen.visible = false;
+            view.buttons.fullscreen_exit.visible = true;
+            drawView(view.name);
+        }
+        return true;
+    }
     
 
     loadView('startView');
@@ -2034,12 +2326,8 @@ function initGame() {
 }
 
 
-// Funzione per il rilevamento del dispositivo mobile e attivazione del fullscreen
-function detectMobileAndFullscreen() {
-    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        enterFullscreen();
-    }
-}
+
+
 
 
 // Avvio del gioco
