@@ -329,6 +329,8 @@ function initGame() {
     const parrotImage = new Image();
     parrotImage.src = 'parrot.png';
     let animationId;
+    let animation_fps = 90;
+    let fpsInterval, now, then, elapsed;
 
     const seedImages = [
         new Image(),
@@ -827,6 +829,12 @@ function initGame() {
 
     function updatePosition() {
         if (currentView === 'game') {
+
+            animationId = requestAnimationFrame(updatePosition);
+
+            now = Date.now();
+            elapsed = now - then;
+
             if (moveDirection) {
                 switch (moveDirection) {
                     case 'left':
@@ -852,9 +860,13 @@ function initGame() {
                 if (parrotY + 50 > parrot_move_yMax) parrotY = parrot_move_yMax - 50;
 
                 checkSeedCollision(); // Controlla la collisione dopo ogni movimento
-                drawCanvas();
+                if (elapsed > fpsInterval) {
+                    then = now - (elapsed % fpsInterval);
+                    drawCanvas();
+                }
+                
             }
-            animationId = requestAnimationFrame(updatePosition);
+            
         } else {
             cancelAnimationFrame(animationId);
             moveDirection = null;
@@ -1635,7 +1647,6 @@ function initGame() {
 
         parrotImage.onload = () => {
             resizeCanvas();
-            updatePosition(); 
         };
         
         // Imposta i settings del livello, usa quelli di default se non presenti
@@ -1680,6 +1691,8 @@ function initGame() {
         // Resize del canvas
         resizeCanvas();
         // Avvia l'animazione di movimento del pappagallo
+        fpsInterval = 1000 / animation_fps;
+        then = Date.now();
         updatePosition(); 
         // Avvia il gioco
         playActionStarted();
