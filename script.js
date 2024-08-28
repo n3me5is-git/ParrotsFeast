@@ -402,7 +402,7 @@ function initGame() {
 
     // Funzione per iniziare la generazione dei semi
     function startSeedGeneration() {
-        seedGenerationInterval = setInterval(spawnSeed, 100); // Genera un seme ogni 100ms
+        seedGenerationInterval = setInterval(spawnSeed, 300); // Genera un seme ogni 100ms
     }
 
     // Funzione per fermare la generazione dei semi
