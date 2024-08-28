@@ -1,6 +1,6 @@
 {
     "name": "Parrot's Feast",
-    "short_name": "ParrotFeast",
+    "short_name": "ParrotsFeast",
     "description": "A fun and interactive game where you guide a parrot to feast on seeds!",
     "start_url": "./index.html",
     "display": "standalone",

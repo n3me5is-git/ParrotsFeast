@@ -26,6 +26,8 @@ const default_settings = {
         ySeedMax: canvas_nom_height-150,
         N: 2000, // Numero di coppie (x, y) da generare
         difficulty: 5, // Valore di difficulty da 1 a 10
+        difficulty_seed_distance: 0,    // Managed by internal function
+        difficulty_seed_time: 0,        // Managed by internal function
         minSeedDistance: 50, // Distanza minima tra semi in pixel
         points: {
             seed1: 18,
@@ -49,7 +51,7 @@ const default_settings = {
         cooldown: 30 // Tempo di cooldown del boost
     },
     game: {
-        speed: 4,   // Velocità default pappagallo
+        speed: 3.5,   // Velocità default pappagallo
         state: 'default', // Stato iniziale: "default", "power_up", "power_down"
         musicVolume: 0.6
     },
@@ -101,8 +103,8 @@ const levels = {
         settings: {
             seed: {
                 minDuration: 3,
-                maxDuration: 20,
-                difficulty: 5
+                maxDuration: 30,
+                difficulty: 1
             }
         }
     },
@@ -113,8 +115,8 @@ const levels = {
         settings: {
             seed: {
                 minDuration: 3,
-                maxDuration: 20,
-                difficulty: 5
+                maxDuration: 30,
+                difficulty: 2
             }
         }
     },
@@ -125,7 +127,31 @@ const levels = {
         settings: {
             seed: {
                 minDuration: 3,
-                maxDuration: 20,
+                maxDuration: 30,
+                difficulty: 3
+            }
+        }
+    },
+    4: {
+        background: 'background-level4.png',
+        music: 'background-music4.mp3',
+        extraLevelCode: '',
+        settings: {
+            seed: {
+                minDuration: 3,
+                maxDuration: 30,
+                difficulty: 4
+            }
+        }
+    },
+    5: {
+        background: 'background-level5.png',
+        music: 'background-music5.mp3',
+        extraLevelCode: '',
+        settings: {
+            seed: {
+                minDuration: 3,
+                maxDuration: 30,
                 difficulty: 5
             }
         }
@@ -984,8 +1010,8 @@ function initGame() {
         }
         if (currentSeeds.length >= settings.seed.maxCount) return;
     
-        const { x, y } = getRandomPosition(canvas_nom_width, canvas_nom_height);
-        const duration = calculateSeedDuration(settings.seed.minDuration, settings.seed.maxDuration, settings.seed.difficulty, { x, y });
+        const { x, y } = getRandomPosition();
+        const duration = calculateSeedDuration();
 
         // Genera un numero casuale da 1 a 100 per determinare quale seme generare
         const randomNum = Math.floor(Math.random() * 100) + 1;
@@ -1182,166 +1208,234 @@ function initGame() {
     
         return { x, y };
     }
-    
-    
-    function getRandomPosition(canvasWidth, canvasHeight) {
+
+
+    function getRandomPosition() {
         const minX = settings.seed.xSeedMin;
         const maxX = settings.seed.xSeedMax;
         const minY = settings.seed.ySeedMin;
         const maxY = settings.seed.ySeedMax;
-        const centerX = parrotX + 25; // Centro del pappagallo sull'asse X
-        const centerY = parrotY + 25; // Centro del pappagallo sull'asse Y
-        let chosenPosition;
-        let attempts = 0;
-        let currentDifficulty = settings.seed.difficulty; // Usa una variabile locale per la difficulty
-        do {
-            // console.log(`Attempt ${attempts + 1}, Current Difficulty: ${currentDifficulty}`);
-    
-            // Genera N coppie (x, y) e calcola la distanza dal pappagallo
-            let positions = [];
-            for (let i = 0; i < settings.seed.N; i++) {
-                const x = Math.random() * (maxX - minX) + minX;
-                const y = Math.random() * (maxY - minY) + minY;
-                const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
-                positions.push({ x, y, distance });
-            }
-            // Ordina le posizioni in base alla distanza dal pappagallo
-            positions.sort((a, b) => a.distance - b.distance);
-            // console.log(`Positions generated and sorted: ${positions.length} positions`);
-            // Determina lo slot di partenza e la finestra in base alla difficulty
-            const slotSize = Math.floor(settings.seed.N / 10);
-            let start, end;
-            if (currentDifficulty === 1) {
-                start = 0;
-                end = 2 * slotSize;
-            } else if (currentDifficulty === 2) {
-                start = 0;
-                end = 3 * slotSize;
-            } else if (currentDifficulty === 3) {
-                start = 0;
-                end = 4 * slotSize;
-            } else if (currentDifficulty === 4) {
-                start = 1 * slotSize;
-                end = 4 * slotSize;
-            } else if (currentDifficulty === 5) {
-                start = 2 * slotSize;
-                end = 5 * slotSize;
-            } else if (currentDifficulty === 6) {
-                start = 3 * slotSize;
-                end = 6 * slotSize;
-            } else if (currentDifficulty === 7) {
-                start = 4 * slotSize;
-                end = 7 * slotSize;
-            } else if (currentDifficulty === 8) {
-                start = 6 * slotSize;
-                end = 9 * slotSize;
-            } else if (currentDifficulty === 9) {
-                start = 7 * slotSize;
-                end = 9 * slotSize;
-            } else if (currentDifficulty === 10) {
-                start = 8 * slotSize;
-                end = 9 * slotSize;
-            }
-            // console.log(`Using positions from slot ${start} to ${end}`);
-            // Crea uno slice dell'array con le posizioni considerate
-            const consideredPositions = positions.slice(start, end);
-            // console.log(`Considered Positions: ${consideredPositions.length}`);
-            // Seleziona una posizione random tra quelle considerate
-            chosenPosition = consideredPositions[Math.floor(Math.random() * consideredPositions.length)];
-            // console.log(`Chosen Position: (${chosenPosition.x}, ${chosenPosition.y})`);
-            // Controlla se la posizione è troppo vicina a un seme esistente
-            if (currentSeeds.some(seed => {
-                const dist = Math.sqrt(Math.pow(seed.x - chosenPosition.x, 2) + Math.pow(seed.y - chosenPosition.y, 2));
-                // console.log(`Distance from Seed: ${dist}`);
-                return dist < settings.seed.minSeedDistance;
-            })) {
-                // console.log('Position too close to an existing seed. Retrying...');
-                chosenPosition = null; // Annulla la posizione scelta se troppo vicina
-                attempts++;
-                if (attempts >= 10) {
-                    console.log('Increasing difficulty...');
-                    currentDifficulty = Math.min(10, currentDifficulty + 1); // Aumenta la difficulty locale
-                    attempts = 0; // Resetta il contatore dei tentativi
-                }
-            } else {
-                break; // Esci dal ciclo se una posizione idonea è stata trovata
-            }
-        } while (!chosenPosition);
-        // console.log(`Final Chosen Position: (${chosenPosition.x}, ${chosenPosition.y})`);
-        return { x: chosenPosition.x, y: chosenPosition.y };
-    }
-    
-    
-    
-    function calculateSeedDuration(minDuration, maxDuration, difficulty, seedPosition) {
         const centerX = parrotX + 25;
         const centerY = parrotY + 25;
-    
-        const distance = Math.sqrt(Math.pow(seedPosition.x - centerX, 2) + Math.pow(seedPosition.y - centerY, 2));
-        const maxDistance = Math.sqrt(Math.pow(canvas_nom_width, 2) + Math.pow(canvas_nom_height, 2));
-    
-        if (distance > (1/2) * maxDistance && difficulty >= 7) {
-            difficulty = Math.max(1, difficulty - 1);
+        const { probabilities, PDmin, PDmax } = getPositionProbabilitiesFromDifficulty(settings.seed.difficulty_seed_distance);
+        // console.log("Position Parameters: \n", probabilities, "\n", PDmin, "\n", PDmax);
+        const maxDistance = Math.max(
+            Math.sqrt(Math.pow(minX - centerX, 2) + Math.pow(minY - centerY, 2)),
+            Math.sqrt(Math.pow(maxX - centerX, 2) + Math.pow(minY - centerY, 2)),
+            Math.sqrt(Math.pow(minX - centerX, 2) + Math.pow(maxY - centerY, 2)),
+            Math.sqrt(Math.pow(maxX - centerX, 2) + Math.pow(maxY - centerY, 2))
+        );
+        // console.log("Max Distance: ", maxDistance);
+        const angle_step_unit = 5;
+        const angleSteps = Array.from({ length: 360 / angle_step_unit }, (_, i) => i * angle_step_unit);
+        let chosenPosition;
+        let attempts = 0;
+        let lastSlot;
+        while (!chosenPosition && attempts < 11) {
+            const randomNum = Math.floor(Math.random() * 1000) + 1;
+            let slotIndex;
+            let cumulativeProbability = 0;
+            for (let i = 0; i < probabilities.length; i++) {
+                cumulativeProbability += probabilities[i];
+                if (randomNum <= cumulativeProbability) {
+                    slotIndex = i;
+                    break;
+                }
+            }
+            let Dmin = (PDmin[slotIndex] / 100) * maxDistance;
+            Dmin = Math.max(Dmin, settings.seed.minSeedDistance);
+            let Dmax = (PDmax[slotIndex] / 100) * maxDistance;
+            Dmax = Math.max(Dmax, settings.seed.minSeedDistance);
+            if (Dmax <= Dmin) {
+                Dmax = maxDistance;
+            }
+            for (let first_attempts = 0; first_attempts < 3; first_attempts++) {
+                const Dr = Math.random() * (Dmax - Dmin) + Dmin;
+                for (let i = angleSteps.length - 1; i >= 0; i--) {
+                    const angle = angleSteps.splice(Math.floor(Math.random() * angleSteps.length), 1)[0];
+                    const rad = angle * (Math.PI / 180);
+                    const x = centerX + Dr * Math.cos(rad);
+                    const y = centerY + Dr * Math.sin(rad);
+                    if (x >= minX && x <= maxX && y >= minY && y <= maxY && isPositionValid(x, y, settings.seed.minSeedDistance)) {
+                        chosenPosition = { x, y };
+                        // console.log("Random numeber ", randomNum, " - Slot: ", slotIndex, " - Dmin: ", Dmin, " - Dmax: ", Dmax, " - Dr: ", Dr, " - Angle: ", angle, " - (x,y): ", chosenPosition);
+                        break;
+                    }
+                }
+                if (chosenPosition) {
+                    break;
+                }
+            }
+            if (!chosenPosition) {
+                attempts++;
+                lastSlot = slotIndex;
+                if (attempts % 2 === 0 && slotIndex == lastSlot) {
+                    // Aumenta PDmax e diminuisci PDmin se i tentativi falliscono
+                    PDmax[slotIndex] = Math.min(100, PDmax[slotIndex] + 10);
+                    PDmin[slotIndex] = Math.max(0, PDmin[slotIndex] - 10);
+                }
+            }
         }
-    
-        let durations = [];
-        for (let i = 0; i < settings.seed.N; i++) {
-            const duration = Math.random() * (maxDuration - minDuration) + minDuration;
-            durations.push(duration);
+        if (!chosenPosition) {
+            // Usa una posizione di fallback se tutti i tentativi falliscono
+            const fallbackX = Math.random() * (maxX - minX) + minX;
+            const fallbackY = Math.random() * (maxY - minY) + minY;
+            return { x: fallbackX, y: fallbackY };
         }
-    
-        durations.sort((a, b) => b - a);
-    
-        const slotSize = Math.floor(settings.seed.N / 10);
-        let start, end;
-    
-        if (difficulty === 1) {
-            start = 0;
-            end = 2 * slotSize;
-        } else if (difficulty === 2) {
-            start = 0;
-            end = 3 * slotSize;
-        } else if (difficulty === 3) {
-            start = 0;
-            end = 4 * slotSize;
-        } else if (difficulty === 4) {
-            start = 2 * slotSize;
-            end = 5 * slotSize;
-        } else if (difficulty === 5) {
-            start = 3 * slotSize;
-            end = 7 * slotSize;
-        } else if (difficulty === 6) {
-            start = 4 * slotSize;
-            end = 8 * slotSize;
-        } else if (difficulty === 7) {
-            start = 5 * slotSize;
-            end = 9 * slotSize;
-        } else if (difficulty === 8) {
-            start = 7 * slotSize;
-            end = 10 * slotSize;
-        } else if (difficulty === 9) {
-            start = 8 * slotSize;
-            end = 10 * slotSize;
-        } else if (difficulty === 10) {
-            start = 9 * slotSize;
-            end = 10 * slotSize;
-        }
-    
-        const consideredDurations = durations.slice(start, end);
-    
-        // Log per monitorare cosa sta accadendo
-        // console.log(`Difficulty: ${difficulty}, Start Slot: ${start}, End Slot: ${end}, Number of Considered Durations: ${consideredDurations.length}`);
-    
-        if (consideredDurations.length === 0) {
-            // console.log("No durations found in the considered slot range. Using fallback.");
-            return maxDuration; // Usa la durata massima come fallback
-        }
-    
-        const chosenDuration = consideredDurations[Math.floor(Math.random() * consideredDurations.length)];
-        // console.log(`Chosen Duration: ${chosenDuration} for Seed at (${seedPosition.x}, ${seedPosition.y})`);
-    
-        return chosenDuration;
+        return chosenPosition;
     }
+
+
+    function getPositionProbabilitiesFromDifficulty(difficulty) {
+        // Assicurati che la difficoltà sia compresa tra 1 e 10
+        if (difficulty < 1) difficulty = 1;
+        if (difficulty > 10) difficulty = 10;
+        let probabilities, PDmin, PDmax;
+        switch(difficulty) {
+            case 1:
+                probabilities = [150, 250, 350, 150, 100]; // Più probabilità per il "vicino"
+                PDmin = [0, 5, 10, 20, 20];
+                PDmax = [10, 15, 25, 40, 50];
+                break;
+            case 2:
+                probabilities = [120, 230, 320, 200, 130];
+                PDmin = [5, 10, 15, 25, 30];
+                PDmax = [15, 20, 30, 45, 55];
+                break;
+            case 3:
+                probabilities = [100, 200, 300, 250, 150];
+                PDmin = [10, 15, 20, 30, 35];
+                PDmax = [20, 25, 35, 50, 60];
+                break;
+            case 4:
+                probabilities = [90, 180, 280, 250, 200];
+                PDmin = [15, 20, 25, 35, 40];
+                PDmax = [25, 30, 40, 55, 65];
+                break;
+            case 5:
+                probabilities = [80, 160, 250, 250, 260];
+                PDmin = [20, 30, 35, 40, 45];
+                PDmax = [30, 40, 55, 60, 75];
+                break;
+            case 6:
+                probabilities = [70, 140, 200, 280, 310];
+                PDmin = [30, 35, 40, 45, 50];
+                PDmax = [50, 50, 50, 65, 80];
+                break;
+            case 7:
+                probabilities = [50, 120, 180, 300, 350];
+                PDmin = [35, 40, 45, 55, 55];
+                PDmax = [60, 60, 65, 80, 85];
+                break;
+            case 8:
+                probabilities = [30, 100, 150, 350, 370];
+                PDmin = [40, 50, 60, 60, 70];
+                PDmax = [70, 70, 80, 90, 90];
+                break;
+            case 9:
+                probabilities = [20, 80, 130, 400, 370];
+                PDmin = [40, 50, 60, 75, 70];
+                PDmax = [80, 80, 90, 100, 100];
+                break;
+            case 10:
+                probabilities = [5, 50, 200, 400, 345]; // Maggiore probabilità per il "lontano"
+                PDmin = [40, 60, 75, 80, 90];
+                PDmax = [80, 90, 95, 100, 100];
+                break;
+        }
+        return { probabilities, PDmin, PDmax };
+    }
+
+
+    function calculateSeedDuration() {
+        const { probabilities, PDmin, PDmax } = getDurationProbabilitiesFromDifficulty(settings.seed.difficulty_seed_time);
+        // console.log(" Speed Parameters: \n", probabilities, "\n", PDmin, "\n", PDmax);
+        // Determina il range di durata
+        const minDuration = settings.seed.minDuration;
+        const maxDuration = settings.seed.maxDuration;
+        const rangeDuration = maxDuration - minDuration;
+        // Genera un intero random tra 1 e 1000 per determinare lo slot
+        const randomValue = Math.floor(Math.random() * 1000) + 1;
+        // Identifica lo slot di probabilità in base al numero random generato
+        let cumulativeProbability = 0;
+        let selectedSlot = 0;
+        for (let i = 0; i < probabilities.length; i++) {
+            cumulativeProbability += probabilities[i];
+            if (randomValue <= cumulativeProbability) {
+                selectedSlot = i;
+                break;
+            }
+        }
+        // Calcola la durata basata su PDmin e PDmax del relativo slot
+        const Dmin = (rangeDuration / 100) * PDmin[selectedSlot] + minDuration;
+        const Dmax = (rangeDuration / 100) * PDmax[selectedSlot] + minDuration;
+        const randomDuration = Math.floor(Math.random() * (Dmax - Dmin + 1)) + Dmin;
+        // console.log("Random numeber ", randomValue, " - Slot: ", selectedSlot, " - Dmin: ", minDuration, " - Dmax: ", maxDuration, " - Rduration ", randomDuration);
+        // Restituisce una durata random tra Dmin e Dmax
+        return randomDuration;
+    }
+
+
+    function getDurationProbabilitiesFromDifficulty(difficulty) {
+        // Assicurati che la difficoltà sia compresa tra 1 e 10
+        if (difficulty < 1) difficulty = 1;
+        if (difficulty > 10) difficulty = 10;
+        let probabilities, PDmin, PDmax;
+        switch(difficulty) {
+            case 1:
+                probabilities = [400, 300, 200, 100]; // Maggiore probabilità per durate lunghe
+                PDmin = [90, 80, 50, 40];
+                PDmax = [100, 100, 100, 80];
+                break;
+            case 2:
+                probabilities = [350, 300, 250, 100];
+                PDmin = [80, 70, 50, 40];
+                PDmax = [100, 100, 80, 80];
+                break;
+            case 3:
+                probabilities = [300, 300, 250, 150];
+                PDmin = [70, 60, 40, 35];
+                PDmax = [90, 90, 80, 80];
+                break;
+            case 4:
+                probabilities = [250, 300, 250, 200];
+                PDmin = [70, 50, 30, 30];
+                PDmax = [90, 80, 70, 60];
+                break;
+            case 5:
+                probabilities = [200, 300, 300, 200];
+                PDmin = [60, 50, 30, 15];
+                PDmax = [90, 70, 50, 40];
+                break;
+            case 6:
+                probabilities = [150, 250, 300, 300];
+                PDmin = [50, 35, 20, 10];
+                PDmax = [80, 60, 50, 30];
+                break;
+            case 7:
+                probabilities = [100, 200, 350, 350];
+                PDmin = [30, 25, 20, 10];
+                PDmax = [70, 50, 45, 25];
+                break;
+            case 8:
+                probabilities = [50, 150, 400, 400];
+                PDmin = [20, 10, 5, 0];
+                PDmax = [70, 40, 30, 10];
+                break;
+            case 9:
+                probabilities = [30, 120, 350, 500]; // Maggiore probabilità per durate brevi
+                PDmin = [20, 10, 0, 0];
+                PDmax = [60, 40, 25, 10];
+                break;
+            case 10:
+                probabilities = [10, 100, 350, 540]; // Quasi solo durate molto brevi
+                PDmin = [20, 5, 0, 0];
+                PDmax = [55, 35, 20, 10];
+                break;
+        }
+        return { probabilities, PDmin, PDmax };
+    }
+    
     
 
     function getFurthestSeed() {
@@ -1579,6 +1673,8 @@ function initGame() {
         if (modified_difficulty > 0) {
             settings.seed.difficulty = modified_difficulty;
         }
+        console.log("Difficulty loaded: ", settings.seed.difficulty);
+        setLevelDifficulty();
         // Aggiungi gli event listener necessari per il gioco
         addGameEventListeners();
         // Resize del canvas
@@ -2315,6 +2411,37 @@ function initGame() {
             drawView(view.name);
         }
         return true;
+    }
+
+
+    function setLevelDifficulty() {
+        const loaded_difficulty = settings.seed.difficulty || 5;
+        // Definizione dei preset di difficoltà
+        const DifficultyPresets = {
+            1: { time: 1, distance: 1 },
+            2: { time: 2, distance: 2 },
+            3: { time: 3, distance: 3 },
+            4: { time: 4, distance: 4 },
+            5: { time: 5, distance: 5 },
+            6: { time: 6, distance: 6 },
+            7: { time: 7, distance: 7 },
+            8: { time: 8, distance: 8 },
+            9: { time: 9, distance: 9 },
+            10: { time: 10, distance: 10 }
+            // Aggiungi altri preset se necessario
+        };
+        // Verifica se esiste un preset, altrimenti usa la difficoltà di default per entrambi
+        const preset = DifficultyPresets[loaded_difficulty] || { time: loaded_difficulty, distance: loaded_difficulty };
+        if (preset.distance > 10 || preset.time > 10) {
+            preset = { time: 5, distance: 5 };
+        }
+        // Imposta le difficoltà solo se sono a 0
+        if (settings.seed.difficulty_seed_time === 0) {
+            settings.seed.difficulty_seed_time = preset.time;
+        }
+        if (settings.seed.difficulty_seed_distance === 0) {
+            settings.seed.difficulty_seed_distance = preset.distance;
+        }
     }
     
 
