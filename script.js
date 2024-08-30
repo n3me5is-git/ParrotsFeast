@@ -1,6 +1,13 @@
 const gameKey = 'knoaofnoewfpowafnp';
-const canvas = document.getElementById('gameCanvas');
+const canvas = document.getElementById('interfaceCanvas');
 const ctx = canvas.getContext('2d');
+const parrot_canvas = document.getElementById('parrotCanvas');
+const parrot_ctx = parrot_canvas.getContext('2d');
+const elements_canvas = document.getElementById('elementsCanvas');
+const elements_ctx = elements_canvas.getContext('2d');
+const background_canvas = document.getElementById('backgroundCanvas');
+const background_ctx = background_canvas.getContext('2d');
+
 let background; // Variabile globale per l'immagine di sfondo
 const canvas_nom_width = 700;
 const canvas_nom_height = 400;
@@ -12,6 +19,12 @@ const parrot_move_yMax = canvas_nom_height-50;
 
 canvas.height = canvas_nom_height * canvas_resolution_multiplier;
 canvas.width = canvas_nom_width * canvas_resolution_multiplier;
+parrot_canvas.height = canvas.height;
+parrot_canvas.width = canvas.width;
+elements_canvas.height = canvas.height;
+elements_canvas.width = canvas.width;
+background_canvas.height = canvas.height;
+background_canvas.width = canvas.width;
 
 
 // Impostazioni di gioco inglobate direttamente nel codice
@@ -35,9 +48,9 @@ const default_settings = {
             seed3: 10
         },
         probabilities: {
-            seed1: 20, 
-            seed2: 30, 
-            seed3: 50  
+            seed1: 15, 
+            seed2: 25, 
+            seed3: 60  
         }
     },
     points: {
@@ -81,13 +94,13 @@ const default_settings = {
         duration1: 15,  // Durata in secondi per il tipo di frutta 1
         duration2: 20,  // Durata in secondi per il tipo di frutta 2
         duration3: 25,  // Durata in secondi per il tipo di frutta 3
-        speedMultiplier: 1.5, // Moltiplicatore di velocità durante il Power Up
+        speedMultiplier: 1.6, // Moltiplicatore di velocità durante il Power Up
     },
     powerDown: {
         duration1: 25,  // Durata in secondi per il tipo di biscotto 1
         duration2: 30,  // Durata in secondi per il tipo di biscotto 2
         duration3: 35,  // Durata in secondi per il tipo di biscotto 3
-        speedMultiplier: 0.6, // Moltiplicatore di velocità durante il Power Down
+        speedMultiplier: 0.5, // Moltiplicatore di velocità durante il Power Down
     }
 };
 
@@ -153,6 +166,54 @@ const levels = {
                 minDuration: 3,
                 maxDuration: 30,
                 difficulty: 5
+            }
+        }
+    },
+    6: {
+        background: 'background-level6.png',
+        music: 'background-music6.mp3',
+        extraLevelCode: '',
+        settings: {
+            seed: {
+                minDuration: 3,
+                maxDuration: 30,
+                difficulty: 6
+            }
+        }
+    },
+    7: {
+        background: 'background-level7.png',
+        music: 'background-music7.mp3',
+        extraLevelCode: '',
+        settings: {
+            seed: {
+                minDuration: 3,
+                maxDuration: 30,
+                difficulty: 7
+            }
+        }
+    },
+    8: {
+        background: 'background-level8.png',
+        music: 'background-music8.mp3',
+        extraLevelCode: '',
+        settings: {
+            seed: {
+                minDuration: 3,
+                maxDuration: 30,
+                difficulty: 8
+            }
+        }
+    },
+    9: {
+        background: 'background-level9.png',
+        music: 'background-music9.mp3',
+        extraLevelCode: '',
+        settings: {
+            seed: {
+                minDuration: 3,
+                maxDuration: 30,
+                difficulty: 9
             }
         }
     },
@@ -256,6 +317,7 @@ const views = {
 let currentView;
 let orientationCheckDone = false;
 let fullscreenCheckDone = false;
+let deferredPrompt;
 
 // Variabili di gioco, statistiche e altro
 let game = {
@@ -308,7 +370,7 @@ function initGame() {
 
     let parrotX = canvas_nom_width/2-25;
     let parrotY = canvas_nom_height/2-50;
-    let speed = 5;
+    let speed = 4;
     let moveDirection = null;
     let isFlipped = false;
     let boostEnabled = true;
@@ -427,21 +489,31 @@ function initGame() {
         if (currentView && currentView != 'game') {
             return;
         }
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.save();
-        ctx.scale(canvas.width/canvas_nom_width, canvas.height/canvas_nom_height); // Applica la scala a tutto il contenuto
-        renderGameInterface();
-        renderParrot();
+        if (!currentLevelState.actionStarted) {
+            renderGameBackground();
+        }
         renderElementsToEat();
-        ctx.restore(); // Ripristina la scala originale
+        renderParrot();
+        renderGameInterface();
+    }
+
+
+    function renderGameBackground() {
+        background_ctx.clearRect(0, 0, background_canvas.width, background_canvas.height);
+        background_ctx.save();
+        background_ctx.scale(background_canvas.width/canvas_nom_width, background_canvas.height/canvas_nom_height); // Applica la 
+        // Disegna lo sfondo (se lo sfondo è un'immagine)
+        if (background) {
+            background_ctx.drawImage(background, 0, 0, canvas_nom_width, canvas_nom_height);
+        }
+        background_ctx.restore(); // Ripristina la scala originale
     }
 
 
     function renderGameInterface() {
-        // Disegna lo sfondo (se lo sfondo è un'immagine)
-        if (background) {
-            ctx.drawImage(background, 0, 0, canvas_nom_width, canvas_nom_height);
-        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.scale(canvas.width/canvas_nom_width, canvas.height/canvas_nom_height); // Applica la 
         // Disegna la top bar
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.fillRect(0, 0, canvas_nom_width, 30);
@@ -470,6 +542,7 @@ function initGame() {
                 ctx.drawImage(button.image, button.x + iconPadding, button.y + iconPadding, iconWidth, iconHeight);
             }
         }
+        ctx.restore(); // Ripristina la scala originale
     }
 
 
@@ -563,33 +636,41 @@ function initGame() {
     }
 
 
-    function renderParrot() {
+    function renderParrot() {       
+        parrot_ctx.globalCompositeOperation = 'copy';
+        parrot_ctx.save();
+        parrot_ctx.scale(canvas.width/canvas_nom_width, canvas.height/canvas_nom_height); 
         // Disegna il pappagallo
-        ctx.save(); // Salva lo stato del contesto prima del flip
+        parrot_ctx.save(); // Salva lo stato del contesto prima del flip
         if (isFlipped) {
-            ctx.scale(-1, 1);
-            ctx.drawImage(parrotImage, -parrotX - 50, parrotY, 50, 50);
+            parrot_ctx.scale(-1, 1);
+            parrot_ctx.drawImage(parrotImage, -parrotX - 50, parrotY, 50, 50);
         } else {
-            ctx.drawImage(parrotImage, parrotX, parrotY, 50, 50);
+            parrot_ctx.drawImage(parrotImage, parrotX, parrotY, 50, 50);
         }
-        ctx.restore(); // Ripristina lo stato precedente per evitare di flip altre parti del canvas
+        parrot_ctx.restore(); // Ripristina lo stato precedente per evitare di flip altre parti del canvas
+        parrot_ctx.restore();   // Ritorna alla precedente scala (originaria)
     }
 
 
     function renderElementsToEat() {
+        elements_ctx.clearRect(0, 0, elements_canvas.width, elements_canvas.height);
+        elements_ctx.save();
+        elements_ctx.scale(canvas.width/canvas_nom_width, canvas.height/canvas_nom_height); 
         currentSeeds.forEach(seed => {
-            ctx.drawImage(seed.image, seed.x, seed.y, 30, 30); // Disegna l'immagine del seme, scalata a 20x20px
+            elements_ctx.drawImage(seed.image, seed.x, seed.y, 30, 30); // Disegna l'immagine del seme, scalata a 20x20px
         });
 
         // Disegna i frutti
         currentFruits.forEach(fruit => {
-            ctx.drawImage(fruit.image, fruit.x, fruit.y, 30, 30);
+            elements_ctx.drawImage(fruit.image, fruit.x, fruit.y, 30, 30);
         });
 
         // Disegna i biscotti
         currentBiscuits.forEach(biscuit => {
-            ctx.drawImage(biscuit.image, biscuit.x, biscuit.y, 30, 30);
+            elements_ctx.drawImage(biscuit.image, biscuit.x, biscuit.y, 30, 30);
         });
+        elements_ctx.restore();
     }
     
 
@@ -606,11 +687,11 @@ function initGame() {
         // console.log(`Playing sound for event: ${event}, file: ${audioFile}`);  // Aggiunto log per debug
         if (audioFile) {
             const audio = new Audio(audioFile);
-            audio.play().catch(error => console.log(`Errore nel riprodurre il suono: ${error}`));
+            audio.play();
         } else {
             console.log(`Nessun suono associato per l'evento: ${event}. Uso quello di default`);
             const audio = new Audio(soundMap['seed_eat']);
-            audio.play().catch(error => console.log(`Errore nel riprodurre il suono: ${error}`));
+            audio.play();
         }
     }
 
@@ -711,6 +792,7 @@ function initGame() {
                 activatePowerDown(biscuitType);
             }
         });
+        drawCanvas();
     }
 
 
@@ -751,7 +833,7 @@ function initGame() {
                 clearInterval(interval);
                 deactivatePowerUp();
             }
-            drawCanvas();
+            renderGameInterface();
         }, 1000);
     }
 
@@ -759,7 +841,7 @@ function initGame() {
     function deactivatePowerUp() {
         powerUpActive = false;
         speed = settings.game.speed;
-        drawCanvas();
+        renderGameInterface();
     }
     
     function activatePowerDown(biscuitType) {
@@ -804,7 +886,7 @@ function initGame() {
                 clearInterval(interval);
                 deactivatePowerDown();
             }
-            drawCanvas();
+            renderGameInterface();
         }, 1000);
     }
     
@@ -812,7 +894,7 @@ function initGame() {
         powerDownActive = false;
         speed = settings.game.speed;
         enableBoost('power_down'); // Riabilita il boost
-        drawCanvas();
+        renderGameInterface();
     }
 
 
@@ -829,8 +911,6 @@ function initGame() {
 
     function updatePosition() {
         if (currentView === 'game') {
-
-            animationId = requestAnimationFrame(updatePosition);
 
             now = Date.now();
             elapsed = now - then;
@@ -862,11 +942,11 @@ function initGame() {
                 checkSeedCollision(); // Controlla la collisione dopo ogni movimento
                 if (elapsed > fpsInterval) {
                     then = now - (elapsed % fpsInterval);
-                    drawCanvas();
+                    renderParrot();
                 }
                 
             }
-            
+            animationId = requestAnimationFrame(updatePosition);
         } else {
             cancelAnimationFrame(animationId);
             moveDirection = null;
@@ -875,7 +955,6 @@ function initGame() {
     }
 
     function startMovement(direction) {
-        // playActionStarted(); // Chiama la funzione quando l'utente inizia a toccare lo schermo
         moveDirection = direction;
     }
 
@@ -887,7 +966,7 @@ function initGame() {
         if (currentView && currentView != 'game') {
             return;
         }
-        const container = document.getElementById('gameCanvas');
+        const container = canvas;
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
         let scaleFactorX = containerWidth / canvas_nom_width;
@@ -1046,7 +1125,7 @@ function initGame() {
         };
     
         currentSeeds.push(seed);
-        drawCanvas(); // Ridisegna il canvas ogni volta che viene aggiunto un seme
+        renderElementsToEat();
         setTimeout(() => removeSeed(seed), duration * 1000); // Rimuovi il seme dopo la durata specificata
     }
     
@@ -1056,7 +1135,7 @@ function initGame() {
         const index = currentSeeds.indexOf(seed);
         if (index > -1) {
             currentSeeds.splice(index, 1);
-            drawCanvas(); // Ridisegna il canvas ogni volta che viene rimosso un seme
+            renderElementsToEat();
         }
     }
 
@@ -1112,7 +1191,7 @@ function initGame() {
     
         currentFruitsProgrammed.pop();
         currentFruits.push(fruit);
-        drawCanvas();
+        renderElementsToEat();
         setTimeout(() => removeFruit(fruit), duration * 1000);
     }
 
@@ -1121,7 +1200,7 @@ function initGame() {
         const index = currentFruits.indexOf(fruit);
         if (index > -1) {
             currentFruits.splice(index, 1);
-            drawCanvas();
+            renderElementsToEat();
         }
     }
 
@@ -1176,7 +1255,7 @@ function initGame() {
     
         currentBiscuitsProgrammed.pop();
         currentBiscuits.push(biscuit);
-        drawCanvas();
+        renderElementsToEat();
         setTimeout(() => removeBiscuit(biscuit), duration * 1000);
     }
     
@@ -1184,7 +1263,7 @@ function initGame() {
         const index = currentBiscuits.indexOf(biscuit);
         if (index > -1) {
             currentBiscuits.splice(index, 1);
-            drawCanvas();
+            renderElementsToEat();
         }
     }
 
@@ -1472,7 +1551,6 @@ function initGame() {
 
     
     function boostToFurthestSeed() {
-        // playActionStarted(); // Chiama la funzione quando l'utente inizia a toccare lo schermo
         const furthestSeed = getFurthestSeed();
         if (!furthestSeed) return;
 
@@ -1510,7 +1588,7 @@ function initGame() {
     
             parrotX += dx / steps;
             parrotY += dy / steps;
-            drawCanvas();
+            renderParrot();
     
             step++;
         }, 1000 / 60); // 60 fps
@@ -1528,7 +1606,7 @@ function initGame() {
     
         const cooldownInterval = setInterval(() => {
             boostCooldown--;
-            drawCanvas(); // Ridisegna il canvas con il countdown aggiornato
+            renderGameInterface(); // Ridisegna il canvas con il countdown aggiornato
     
             if (boostCooldown <= 0) {
                 clearInterval(cooldownInterval);
@@ -1550,7 +1628,7 @@ function initGame() {
             // Logica aggiuntiva per gestire il power_down se necessario
         }
     
-        drawCanvas(); // Ridisegna il canvas per mostrare l'icona senza countdown
+        renderGameInterface(); // Ridisegna il canvas per mostrare l'icona senza countdown
     }
     
     function enableBoost() {
@@ -1558,7 +1636,7 @@ function initGame() {
         boostState = 'enabled';
         game_buttons.boost.visible = true;
         game_buttons.boost_disabled.visible = false;
-        drawCanvas();
+        renderGameInterface();
     }
 
 
@@ -1588,7 +1666,7 @@ function initGame() {
         backgroundMusic = new Audio(levels[currentLevelState.levelNumber].music);
         backgroundMusic.loop = true;
         backgroundMusic.volume = settings.game.musicVolume || 0.5;
-        backgroundMusic.play().catch(error => console.log(`Errore nel riprodurre la musica: ${error}`));
+        backgroundMusic.play();
 
         // Avvia il conto alla rovescia
         startLevelTimer();
@@ -1604,7 +1682,7 @@ function initGame() {
         currentLevelState.levelTimerInterval = setInterval(() => {
             currentLevelState.levelTimeRemaining--;    
             // Aggiorna il countdown sulla top bar
-            drawCanvas();
+            renderGameInterface();
             // Se mancano meno di 10 secondi, riproduci il suono di tick
             if (currentLevelState.levelTimeRemaining <= 10 && currentLevelState.levelTimeRemaining > 0) {
                 playSound('clock_tick');
@@ -1637,17 +1715,6 @@ function initGame() {
             console.error(`Level ${levelNumber} not found!`);
             return;
         }
-        
-        // Carica lo sfondo e assegna alla variabile globale `background`
-        background = new Image();
-        background.src = level.background;
-        background.onload = () => {
-            drawCanvas(); // Ridisegna il canvas solo dopo che lo sfondo è stato caricato
-        };
-
-        parrotImage.onload = () => {
-            resizeCanvas();
-        };
         
         // Imposta i settings del livello, usa quelli di default se non presenti
         settings.seed = { ...default_settings.seed, ...level.settings.seed };
@@ -1688,7 +1755,16 @@ function initGame() {
         setLevelDifficulty();
         // Aggiungi gli event listener necessari per il gioco
         addGameEventListeners();
-        // Resize del canvas
+        // Carica lo sfondo e assegna alla variabile globale `background`
+        background = new Image();
+        background.src = level.background;
+        background.onload = () => {
+            renderGameBackground(); // Ridisegna il canvas solo dopo che lo sfondo è stato caricato
+        };
+        parrotImage.onload = () => {
+            renderParrot();
+        };
+        // Resize e draw iniziale del canvas
         resizeCanvas();
         // Avvia l'animazione di movimento del pappagallo
         fpsInterval = 1000 / animation_fps;
@@ -1696,7 +1772,6 @@ function initGame() {
         updatePosition(); 
         // Avvia il gioco
         playActionStarted();
-   
     }
 
 
@@ -1782,7 +1857,7 @@ function initGame() {
         // Riproduci il suono della vista, se presente
         if (view.loadSound) {
             view.playingaudio = new Audio(view.loadSound);
-            view.playingaudio.play().catch(error => console.log(`Errore nel riprodurre il suono: ${error}`));
+            view.playingaudio.play();
         }
     }
     
@@ -1800,6 +1875,9 @@ function initGame() {
     function drawView(viewname) {
         const view = views[viewname];
         if (!view) return;
+        background_ctx.clearRect(0, 0, background_canvas.width, background_canvas.height);
+        elements_ctx.clearRect(0, 0, elements_canvas.width, elements_canvas.height);
+        parrot_ctx.clearRect(0, 0, parrot_canvas.width, parrot_canvas.height);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
         ctx.scale(canvas.width / canvas_nom_width, canvas.height / canvas_nom_height);
@@ -1841,7 +1919,7 @@ function initGame() {
     
     
     function handleViewCanvasClick(event) {
-        const container = document.getElementById('gameCanvas');
+        const container = canvas;
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
         let scaleFactorX = containerWidth / canvas_nom_width;
@@ -1933,7 +2011,6 @@ function initGame() {
             view.playingaudio.currentTime = 0; // Resetta la traccia all'inizio
         }
         currentView = null;
-        // ctx.clearRect(0, 0, canvas.width, canvas.height);
         // Esegui altre eventuali azioni di chiusura
     }
 
@@ -2459,13 +2536,51 @@ function initGame() {
     
 
     loadView('startView');
-
-    // loadLevel(1); // Carica il livello 1 all'inizio del gioco
     
 
 }
 
 
+
+if(typeof console === "undefined"){
+    console = {};
+}
+
+
+
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    console.log("Before Installation Executed");
+    e.preventDefault();
+    deferredPrompt = e;
+    // Mostra l'overlay di installazione
+    const installOverlay = document.getElementById('install-overlay');
+    installOverlay.style.display = 'flex';
+    const installButton = document.getElementById('install-button');
+    const onlineButton = document.getElementById('online-button');
+    installButton.addEventListener('click', () => {
+        installOverlay.style.display = 'none';
+        // Mostra il prompt di installazione
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the installation');
+            } else {
+                console.log('User dismissed the installation');
+            }
+            deferredPrompt = null;
+        });
+    });
+    // Gestisci la chiusura della card quando si preme "Online" o si clicca fuori dalla card
+    onlineButton.addEventListener('click', () => {
+        installOverlay.style.display = 'none';
+    });
+    installOverlay.addEventListener('click', (event) => {
+        if (event.target === installOverlay) {
+            installOverlay.style.display = 'none';
+        }
+    });
+});
 
 
 
