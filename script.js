@@ -66,7 +66,7 @@ const default_settings = {
         cooldown: 30 // Tempo di cooldown del boost
     },
     game: {
-        speed: 15,   // Velocità default pappagallo
+        speed: 17,   // Velocità default pappagallo
         state: 'default', // Stato iniziale: "default", "power_up", "power_down"
         musicVolume: 0.6
     },
@@ -112,8 +112,8 @@ let settings = { };
 
 const levels = {
     1: {
-        background: 'background-level1.png',
-        music: 'background-music1.mp3',
+        background: 'background-level-jungle.png',
+        music: 'background-music-jungle.mp3',
         extraLevelCode: '',
         settings: {
             seed: {
@@ -124,8 +124,8 @@ const levels = {
         }
     },
     2: {
-        background: 'background-level2.png',
-        music: 'background-music2.mp3',
+        background: 'background-level-savana.png',
+        music: 'background-music-savana.mp3',
         extraLevelCode: '',
         settings: {
             seed: {
@@ -136,8 +136,8 @@ const levels = {
         }
     },
     3: {
-        background: 'background-level3.png',
-        music: 'background-music3.mp3',
+        background: 'background-level-arabia.png',
+        music: 'background-music-arabia.mp3',
         extraLevelCode: '',
         settings: {
             seed: {
@@ -148,8 +148,8 @@ const levels = {
         }
     },
     4: {
-        background: 'background-level4.png',
-        music: 'background-music4.mp3',
+        background: 'background-level-pirates.png',
+        music: 'background-music-pirates.mp3',
         extraLevelCode: '',
         settings: {
             seed: {
@@ -160,8 +160,8 @@ const levels = {
         }
     },
     5: {
-        background: 'background-level5.png',
-        music: 'background-music5.mp3',
+        background: 'background-level-cityrio.png',
+        music: 'background-music-cityrio.mp3',
         extraLevelCode: '',
         settings: {
             seed: {
@@ -172,8 +172,8 @@ const levels = {
         }
     },
     6: {
-        background: 'background-level6.png',
-        music: 'background-music6.mp3',
+        background: 'background-level-house80.png',
+        music: 'background-music-house80.mp3',
         extraLevelCode: '',
         settings: {
             seed: {
@@ -184,8 +184,8 @@ const levels = {
         }
     },
     7: {
-        background: 'background-level7.png',
-        music: 'background-music7.mp3',
+        background: 'background-level-armageddon.png',
+        music: 'background-music-armageddon.mp3',
         extraLevelCode: '',
         settings: {
             seed: {
@@ -196,8 +196,8 @@ const levels = {
         }
     },
     8: {
-        background: 'background-level8.png',
-        music: 'background-music8.mp3',
+        background: 'background-level-space.png',
+        music: 'background-music-space.mp3',
         extraLevelCode: '',
         settings: {
             seed: {
@@ -208,8 +208,20 @@ const levels = {
         }
     },
     9: {
-        background: 'background-level9.png',
-        music: 'background-music9.mp3',
+        background: 'background-level-crystalworld.png',
+        music: 'background-music-crystalworld.mp3',
+        extraLevelCode: '',
+        settings: {
+            seed: {
+                minDuration: 3,
+                maxDuration: 30,
+                difficulty: 9
+            }
+        }
+    },
+    10: {
+        background: 'background-level-japanfantasy.png',
+        music: 'background-music-japanfantasy.mp3',
         extraLevelCode: '',
         settings: {
             seed: {
