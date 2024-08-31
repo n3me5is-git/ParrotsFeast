@@ -16,6 +16,8 @@ const parrot_move_xMin = 25;
 const parrot_move_xMax = canvas_nom_width-25;
 const parrot_move_yMin = 27;
 const parrot_move_yMax = canvas_nom_height-50;
+const speed_multiplier = 30;
+const boost_speed_multiplier = 120;
 
 canvas.height = canvas_nom_height * canvas_resolution_multiplier;
 canvas.width = canvas_nom_width * canvas_resolution_multiplier;
@@ -390,8 +392,10 @@ function initGame() {
 
     const parrotImage = new Image();
     parrotImage.src = 'parrot.png';
+    const parrotImageFlipped = new Image();
+    parrotImageFlipped.src = 'parrot_flipped.png';
     let animationId;
-    let animation_fps = 90;
+    let animation_fps = 120;
     let fpsInterval, now, then, elapsed;
 
     const seedImages = [
@@ -486,19 +490,19 @@ function initGame() {
 
 
     function drawCanvas() {
-        if (currentView && currentView != 'game') {
-            return;
-        }
         if (!currentLevelState.actionStarted) {
             renderGameBackground();
+            renderParrot();
         }
         renderElementsToEat();
-        renderParrot();
         renderGameInterface();
     }
 
 
     function renderGameBackground() {
+        if (currentView && currentView != 'game') {
+            return;
+        }
         background_ctx.clearRect(0, 0, background_canvas.width, background_canvas.height);
         background_ctx.save();
         background_ctx.scale(background_canvas.width/canvas_nom_width, background_canvas.height/canvas_nom_height); // Applica la 
@@ -511,6 +515,9 @@ function initGame() {
 
 
     function renderGameInterface() {
+        if (currentView && currentView != 'game') {
+            return;
+        }
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
         ctx.scale(canvas.width/canvas_nom_width, canvas.height/canvas_nom_height); // Applica la 
@@ -636,24 +643,27 @@ function initGame() {
     }
 
 
-    function renderParrot() {       
-        parrot_ctx.globalCompositeOperation = 'copy';
+    function renderParrot() {     
+        if (currentView && currentView != 'game') {
+            return;
+        }  
+        parrot_ctx.clearRect(0, 0, parrot_canvas.width, parrot_canvas.height);
         parrot_ctx.save();
-        parrot_ctx.scale(canvas.width/canvas_nom_width, canvas.height/canvas_nom_height); 
-        // Disegna il pappagallo
-        parrot_ctx.save(); // Salva lo stato del contesto prima del flip
+        parrot_ctx.scale(canvas.width/canvas_nom_width, canvas.height/canvas_nom_height);  
         if (isFlipped) {
-            parrot_ctx.scale(-1, 1);
-            parrot_ctx.drawImage(parrotImage, -parrotX - 50, parrotY, 50, 50);
+            // Flipping manuale invertendo le coordinate di disegno
+            parrot_ctx.drawImage(parrotImageFlipped, parrotX + 50, parrotY, -50, 50);
         } else {
             parrot_ctx.drawImage(parrotImage, parrotX, parrotY, 50, 50);
         }
-        parrot_ctx.restore(); // Ripristina lo stato precedente per evitare di flip altre parti del canvas
         parrot_ctx.restore();   // Ritorna alla precedente scala (originaria)
     }
 
 
     function renderElementsToEat() {
+        if (currentView && currentView != 'game') {
+            return;
+        }
         elements_ctx.clearRect(0, 0, elements_canvas.width, elements_canvas.height);
         elements_ctx.save();
         elements_ctx.scale(canvas.width/canvas_nom_width, canvas.height/canvas_nom_height); 
@@ -911,47 +921,48 @@ function initGame() {
 
     function updatePosition() {
         if (currentView === 'game') {
-
-            now = Date.now();
-            elapsed = now - then;
-
+    
+            now = performance.now();
+            elapsed = now - then; // tempo trascorso dall'ultimo frame
+    
             if (moveDirection) {
+                // Calcola la distanza percorsa basata sul tempo
+                var distance = speed * speed_multiplier * (elapsed / 1000); // distanza = velocità * tempo
+    
                 switch (moveDirection) {
                     case 'left':
-                        parrotX -= speed;
+                        parrotX -= distance;
                         if (isFlipped) isFlipped = false;
                         break;
                     case 'right':
-                        parrotX += speed;
+                        parrotX += distance;
                         if (!isFlipped) isFlipped = true;
                         break;
                     case 'up':
-                        parrotY -= speed;
+                        parrotY -= distance;
                         break;
                     case 'down':
-                        parrotY += speed;
+                        parrotY += distance;
                         break;
                 }
-
+    
                 // Confini del canvas
                 if (parrotX < parrot_move_xMin) parrotX = parrot_move_xMin;
                 if (parrotX + 50 > parrot_move_xMax) parrotX = parrot_move_xMax - 50;
                 if (parrotY < parrot_move_yMin) parrotY = parrot_move_yMin;
                 if (parrotY + 50 > parrot_move_yMax) parrotY = parrot_move_yMax - 50;
-
                 checkSeedCollision(); // Controlla la collisione dopo ogni movimento
-                if (elapsed > fpsInterval) {
-                    then = now - (elapsed % fpsInterval);
-                    renderParrot();
-                }
-                
+            }
+            // Renderizza solo se è trascorso abbastanza tempo per il prossimo frame
+            if (elapsed > fpsInterval) {
+                renderParrot();
+                then = now - (elapsed % fpsInterval);
             }
             animationId = requestAnimationFrame(updatePosition);
         } else {
             cancelAnimationFrame(animationId);
             moveDirection = null;
         }
-        
     }
 
     function startMovement(direction) {
@@ -1064,14 +1075,18 @@ function initGame() {
         // console.log(`Button ${event.key} clicked.`);
         switch (event.key) {
             case 'ArrowLeft':
+            case 'a':
                 startMovement('left');
                 break;
+            case 'd':
             case 'ArrowRight':
                 startMovement('right');
                 break;
+            case 'w':
             case 'ArrowUp':
                 startMovement('up');
                 break;
+            case 's':
             case 'ArrowDown':
                 startMovement('down');
                 break;
@@ -1553,11 +1568,11 @@ function initGame() {
     function boostToFurthestSeed() {
         const furthestSeed = getFurthestSeed();
         if (!furthestSeed) return;
-
+    
         // Aggiorna il conteggio dei boost utilizzati
         currentLevelState.boostsUsed++;
     
-        const boostSpeed = settings.boost.speed; // Velocità del boost impostabile nelle impostazioni
+        const boostSpeed = settings.boost.speed * boost_speed_multiplier; // Velocità del boost impostabile nelle impostazioni
     
         const targetX = furthestSeed.x;
         const targetY = furthestSeed.y;
@@ -1566,8 +1581,10 @@ function initGame() {
         const dy = targetY - parrotY;
         const distance = Math.sqrt(dx * dx + dy * dy);
     
-        const steps = distance / boostSpeed;
-        let step = 0;
+        const duration = distance / boostSpeed; // Durata totale dell'animazione in secondi
+        const startX = parrotX;
+        const startY = parrotY;
+        const startTime = performance.now();
     
         // Determina se il pappagallo deve essere flippato
         if (dx < 0 && isFlipped) {
@@ -1576,22 +1593,32 @@ function initGame() {
             isFlipped = true;
         }
     
-        const boostInterval = setInterval(() => {
-            if (step >= steps) {
-                clearInterval(boostInterval);
+        function animateBoost() {
+            const currentTime = performance.now();
+            const elapsedTime = (currentTime - startTime) / 1000; // Tempo trascorso in secondi
+    
+            // Calcola la frazione di animazione completata
+            const progress = Math.min(elapsedTime / duration, 1);
+    
+            // Aggiorna la posizione del pappagallo in base alla progressione lineare
+            parrotX = startX + dx * progress;
+            parrotY = startY + dy * progress;
+    
+            renderParrot();
+    
+            if (progress < 1) {
+                requestAnimationFrame(animateBoost);
+            } else {
+                // L'animazione è completata, assicurati che il pappagallo sia esattamente sul seme
                 parrotX = targetX;
                 parrotY = targetY;
                 checkSeedCollision(); // Il pappagallo mangia il seme una volta raggiunto
                 disableBoostTemporarily();
-                return;
             }
+        }
     
-            parrotX += dx / steps;
-            parrotY += dy / steps;
-            renderParrot();
-    
-            step++;
-        }, 1000 / 60); // 60 fps
+        // Avvia l'animazione
+        requestAnimationFrame(animateBoost);
     }
     
 
@@ -1608,7 +1635,7 @@ function initGame() {
             boostCooldown--;
             renderGameInterface(); // Ridisegna il canvas con il countdown aggiornato
     
-            if (boostCooldown <= 0) {
+            if (boostCooldown <= 0 || currentView != 'game') {
                 clearInterval(cooldownInterval);
                 if (!powerDownActive) {
                     enableBoost(); // Riabilita il boost
@@ -1764,11 +1791,14 @@ function initGame() {
         parrotImage.onload = () => {
             renderParrot();
         };
+        parrotImageFlipped.onload = () => {
+            renderParrot();
+        };
         // Resize e draw iniziale del canvas
         resizeCanvas();
         // Avvia l'animazione di movimento del pappagallo
         fpsInterval = 1000 / animation_fps;
-        then = Date.now();
+        then = performance.now();
         updatePosition(); 
         // Avvia il gioco
         playActionStarted();
@@ -1781,14 +1811,17 @@ function initGame() {
         removeGameEventListeners();
         // Ferma la generazione dei semi, frutti e biscotti
         stopSeedGeneration();
-        stopFruitGeneration()
-        stopBiscuitGeneration()
+        stopFruitGeneration();
+        stopBiscuitGeneration();
         currentView = null;
         currentSeeds = [];
         currentBiscuits = [];
         currentBiscuitsProgrammed = [];
         currentFruits = [];
         currentFruitsProgrammed = [];
+        deactivatePowerDown();
+        deactivatePowerUp();
+        enableBoost();
         updatePosition();
         moveDirection = null;
         if (backgroundMusic) {

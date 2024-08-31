@@ -4,7 +4,6 @@ var CURRENT_CACHES = {
     ondemand: 'parrots-feast-cache-ondemand-v' + CACHE_VERSION
 };
 const urlsToPrefetch = [
-    '/',
     'index.html',
     'styles.css',
     'script.js',
@@ -59,6 +58,7 @@ const urlsToPrefetch = [
     'gong.wav',
     'icon.png',
     'parrot.png',
+    'parrot_flipped.png',
     'rocket-disabled.svg',
     'rocket.svg',
     'scores_background.png',
