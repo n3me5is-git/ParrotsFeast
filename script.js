@@ -16,7 +16,7 @@ const parrot_move_xMin = 25;
 const parrot_move_xMax = canvas_nom_width-25;
 const parrot_move_yMin = 27;
 const parrot_move_yMax = canvas_nom_height-50;
-const speed_multiplier = 30;
+const speed_multiplier = 10;
 const boost_speed_multiplier = 120;
 
 canvas.height = canvas_nom_height * canvas_resolution_multiplier;
@@ -66,7 +66,7 @@ const default_settings = {
         cooldown: 30 // Tempo di cooldown del boost
     },
     game: {
-        speed: 3.5,   // Velocità default pappagallo
+        speed: 15,   // Velocità default pappagallo
         state: 'default', // Stato iniziale: "default", "power_up", "power_down"
         musicVolume: 0.6
     },
@@ -954,10 +954,13 @@ function initGame() {
                 checkSeedCollision(); // Controlla la collisione dopo ogni movimento
             }
             // Renderizza solo se è trascorso abbastanza tempo per il prossimo frame
-            if (elapsed > fpsInterval) {
-                renderParrot();
-                then = now - (elapsed % fpsInterval);
-            }
+            // if (elapsed > fpsInterval) {
+            //     renderParrot();
+            //     then = now - (elapsed % fpsInterval);
+            // }
+            // Renderizza al massimo frame rate possibile
+            renderParrot();
+            then = performance.now();
             animationId = requestAnimationFrame(updatePosition);
         } else {
             cancelAnimationFrame(animationId);

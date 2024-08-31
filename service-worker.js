@@ -80,10 +80,20 @@ self.addEventListener('install', function(event) {
         var request = new Request(url, {mode: 'no-cors'});
         return fetch(request).then(function(response) {
           if (response.status >= 400) {
-            throw new Error('request for ' + urlToPrefetch +
-              ' failed with status ' + response.statusText);
+            throw new Error('Request for ' + urlToPrefetch + ' failed with status ' + response.statusText);
+          } else if (response.status === 206) {
+            // Se la risposta è parziale, effettua una nuova richiesta per ottenere il file completo
+            var fullRequest = new Request(url, { headers: { 'Range': 'bytes=0-' } });
+            return fetch(fullRequest).then(function(fullResponse) {
+              if (fullResponse.status === 200) {
+                return cache.put(urlToPrefetch, fullResponse);
+              } else {
+                throw new Error('Failed to fetch the complete file for ' + urlToPrefetch);
+              }
+            });
+          } else {
+            return cache.put(urlToPrefetch, response);
           }
-          return cache.put(urlToPrefetch, response);
         }).catch(function(error) {
           console.error('Not caching ' + urlToPrefetch + ' due to ' + error);
         });
@@ -123,10 +133,12 @@ self.addEventListener('fetch', (event) => {
       }
       // Se non è nella cache, effettua la richiesta di rete e la mette in cache dinamicamente
       return fetch(event.request).then((networkResponse) => {
-          if (networkResponse) {
+          if (networkResponse && networkResponse.status !== 206) { // Esclude le risposte parziali
             return putcache(event.request, networkResponse).then(() => {
                 return networkResponse;
             });
+          } else {
+            return networkResponse; // Restituisce comunque la risposta parziale all'utente
           }
       });
     }).catch((error) => {
@@ -136,6 +148,7 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
+  
 function putcache(request, response) {
     if (response.type === "error" || response.type === "opaque" || request.url.startsWith('chrome-extension')) {
         return Promise.resolve(); // non mettere in cache errori di rete o richieste da estensioni Chrome
