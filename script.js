@@ -3,15 +3,13 @@ const canvas = document.getElementById('interfaceCanvas');
 const ctx = canvas.getContext('2d');
 const parrot_canvas = document.getElementById('parrotCanvas');
 const parrot_ctx = parrot_canvas.getContext('2d');
-const elements_canvas = document.getElementById('elementsCanvas');
-const elements_ctx = elements_canvas.getContext('2d');
 const background_canvas = document.getElementById('backgroundCanvas');
 const background_ctx = background_canvas.getContext('2d');
 
 let background; // Variabile globale per l'immagine di sfondo
 const canvas_nom_width = 700;
 const canvas_nom_height = 400;
-const canvas_resolution_multiplier = 5;     // Increase the definition
+const canvas_resolution_multiplier = 3.6;     // Increase the definition
 const parrot_move_xMin = 25;
 const parrot_move_xMax = canvas_nom_width-25;
 const parrot_move_yMin = 27;
@@ -23,8 +21,6 @@ canvas.height = canvas_nom_height * canvas_resolution_multiplier;
 canvas.width = canvas_nom_width * canvas_resolution_multiplier;
 parrot_canvas.height = canvas.height;
 parrot_canvas.width = canvas.width;
-elements_canvas.height = canvas.height;
-elements_canvas.width = canvas.width;
 background_canvas.height = canvas.height;
 background_canvas.width = canvas.width;
 
@@ -409,6 +405,8 @@ function initGame() {
     let animationId;
     let animation_fps = 120;
     let fpsInterval, now, then, elapsed;
+    let main_draw_now, main_draw_then, main_draw_elapsed;
+    let immediate_draw = false;
 
     const seedImages = [
         new Image(),
@@ -506,8 +504,22 @@ function initGame() {
             renderGameBackground();
             renderParrot();
         }
-        renderElementsToEat();
-        renderGameInterface();
+        if (currentView && currentView != 'game') {
+            return;
+        }
+        // Redraw only 3 per second at most
+        main_draw_now = performance.now();
+        main_draw_elapsed = main_draw_now - main_draw_then; // tempo trascorso dall'ultimo frame
+        if (main_draw_elapsed >= 333 || immediate_draw) {
+            immediate_draw = false;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.scale(canvas.width/canvas_nom_width, canvas.height/canvas_nom_height); // Applica la 
+            renderElementsToEat();
+            renderGameInterface();
+            ctx.restore(); // Ripristina la scala originale
+            main_draw_then = performance.now();
+        }
     }
 
 
@@ -527,12 +539,6 @@ function initGame() {
 
 
     function renderGameInterface() {
-        if (currentView && currentView != 'game') {
-            return;
-        }
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.save();
-        ctx.scale(canvas.width/canvas_nom_width, canvas.height/canvas_nom_height); // Applica la 
         // Disegna la top bar
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.fillRect(0, 0, canvas_nom_width, 30);
@@ -561,7 +567,6 @@ function initGame() {
                 ctx.drawImage(button.image, button.x + iconPadding, button.y + iconPadding, iconWidth, iconHeight);
             }
         }
-        ctx.restore(); // Ripristina la scala originale
     }
 
 
@@ -602,14 +607,11 @@ function initGame() {
         ctx.textAlign = 'right';
         ctx.fillStyle = '#FFFFFF'; // Assicura che il testo sia bianco
         ctx.font = `bold 16px Arial, sans-serif`; // Assicura che il testo sia della dimensione corretta
-    
         const iconYPosition = 5; // Y-position per l'icona
         const textYPosition = 20; // Y-position per il testo
-    
         if (boostState === 'cooldown') {
             // Aggiungi zero iniziale per rendere il countdown a due cifre
             const formattedCooldown = boostCooldown < 10 ? `0${boostCooldown}` : boostCooldown;
-    
             ctx.drawImage(rocketIcon, canvas_nom_width - 60, iconYPosition, 20, 20);
             ctx.fillText(`${formattedCooldown}s`, canvas_nom_width - 10, textYPosition);
         } else if (boostState === 'disabled') {
@@ -620,17 +622,14 @@ function initGame() {
     }
 
     function renderPowerUpStatus() {
-        ctx.textAlign = 'right';
-        ctx.fillStyle = '#FFFFFF'; // Testo bianco
-        ctx.font = `bold 16px Arial, sans-serif`; // Dimensione del testo
-    
-        const iconYPosition = 5; // Posizione Y per l'icona
-        const textYPosition = 20; // Posizione Y per il testo
-    
         if (powerUpActive) {
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#FFFFFF'; // Testo bianco
+            ctx.font = `bold 16px Arial, sans-serif`; // Dimensione del testo
+            const iconYPosition = 5; // Posizione Y per l'icona
+            const textYPosition = 20; // Posizione Y per il testo
             const remainingTime = Math.ceil((powerUpEndTime - Date.now()) / 1000);
             const formattedTime = remainingTime < 10 ? `0${remainingTime}` : remainingTime;
-    
             ctx.drawImage(powerUpIcon, canvas_nom_width - 120, iconYPosition, 20, 20);
             ctx.fillText(`${formattedTime}s`, canvas_nom_width - 70, textYPosition);
         }
@@ -638,17 +637,14 @@ function initGame() {
 
 
     function renderPowerDownStatus() {
-        ctx.textAlign = 'right';
-        ctx.fillStyle = '#FFFFFF'; // Testo bianco
-        ctx.font = `bold 16px Arial, sans-serif`; // Dimensione del testo
-    
-        const iconYPosition = 5; // Posizione Y per l'icona
-        const textYPosition = 20; // Posizione Y per il testo
-    
         if (powerDownActive) {
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#FFFFFF'; // Testo bianco
+            ctx.font = `bold 16px Arial, sans-serif`; // Dimensione del testo
+            const iconYPosition = 5; // Posizione Y per l'icona
+            const textYPosition = 20; // Posizione Y per il testo
             const remainingTime = Math.ceil((powerDownEndTime - Date.now()) / 1000);
             const formattedTime = remainingTime < 10 ? `0${remainingTime}` : remainingTime;
-    
             ctx.drawImage(powerDownIcon, canvas_nom_width - 120, iconYPosition, 20, 20);
             ctx.fillText(`${formattedTime}s`, canvas_nom_width - 70, textYPosition);
         }
@@ -673,26 +669,17 @@ function initGame() {
 
 
     function renderElementsToEat() {
-        if (currentView && currentView != 'game') {
-            return;
-        }
-        elements_ctx.clearRect(0, 0, elements_canvas.width, elements_canvas.height);
-        elements_ctx.save();
-        elements_ctx.scale(canvas.width/canvas_nom_width, canvas.height/canvas_nom_height); 
         currentSeeds.forEach(seed => {
-            elements_ctx.drawImage(seed.image, seed.x, seed.y, 30, 30); // Disegna l'immagine del seme, scalata a 20x20px
+            ctx.drawImage(seed.image, seed.x, seed.y, 30, 30); // Disegna l'immagine del seme, scalata a 20x20px
         });
-
         // Disegna i frutti
         currentFruits.forEach(fruit => {
-            elements_ctx.drawImage(fruit.image, fruit.x, fruit.y, 30, 30);
+            ctx.drawImage(fruit.image, fruit.x, fruit.y, 30, 30);
         });
-
         // Disegna i biscotti
         currentBiscuits.forEach(biscuit => {
-            elements_ctx.drawImage(biscuit.image, biscuit.x, biscuit.y, 30, 30);
+            ctx.drawImage(biscuit.image, biscuit.x, biscuit.y, 30, 30);
         });
-        elements_ctx.restore();
     }
     
 
@@ -758,6 +745,8 @@ function initGame() {
                 if (seedType === 'seed3') currentLevelState.seedsCollectedType3++;
                 console.log(`Seed eaten (+${points}). New Score: ${score}`);
                 playSound('seed_eat'); // Gioca il suono associato
+                immediate_draw = true;
+                drawCanvas();
             } else {
                 // console.log('No collision detected.');
             }
@@ -814,7 +803,6 @@ function initGame() {
                 activatePowerDown(biscuitType);
             }
         });
-        drawCanvas();
     }
 
 
@@ -855,7 +843,8 @@ function initGame() {
                 clearInterval(interval);
                 deactivatePowerUp();
             }
-            renderGameInterface();
+            immediate_draw = true;
+            drawCanvas();
         }, 1000);
     }
 
@@ -863,7 +852,7 @@ function initGame() {
     function deactivatePowerUp() {
         powerUpActive = false;
         speed = settings.game.speed;
-        renderGameInterface();
+        drawCanvas();
     }
     
     function activatePowerDown(biscuitType) {
@@ -908,7 +897,8 @@ function initGame() {
                 clearInterval(interval);
                 deactivatePowerDown();
             }
-            renderGameInterface();
+            immediate_draw = true;
+            drawCanvas();
         }, 1000);
     }
     
@@ -916,7 +906,7 @@ function initGame() {
         powerDownActive = false;
         speed = settings.game.speed;
         enableBoost('power_down'); // Riabilita il boost
-        renderGameInterface();
+        drawCanvas();
     }
 
 
@@ -1155,7 +1145,7 @@ function initGame() {
         };
     
         currentSeeds.push(seed);
-        renderElementsToEat();
+        drawCanvas();
         setTimeout(() => removeSeed(seed), duration * 1000); // Rimuovi il seme dopo la durata specificata
     }
     
@@ -1165,7 +1155,7 @@ function initGame() {
         const index = currentSeeds.indexOf(seed);
         if (index > -1) {
             currentSeeds.splice(index, 1);
-            renderElementsToEat();
+            drawCanvas();
         }
     }
 
@@ -1221,7 +1211,8 @@ function initGame() {
     
         currentFruitsProgrammed.pop();
         currentFruits.push(fruit);
-        renderElementsToEat();
+        immediate_draw = true;
+        drawCanvas();
         setTimeout(() => removeFruit(fruit), duration * 1000);
     }
 
@@ -1230,7 +1221,8 @@ function initGame() {
         const index = currentFruits.indexOf(fruit);
         if (index > -1) {
             currentFruits.splice(index, 1);
-            renderElementsToEat();
+            immediate_draw = true;
+            drawCanvas();
         }
     }
 
@@ -1285,7 +1277,8 @@ function initGame() {
     
         currentBiscuitsProgrammed.pop();
         currentBiscuits.push(biscuit);
-        renderElementsToEat();
+        immediate_draw = true;
+        drawCanvas();
         setTimeout(() => removeBiscuit(biscuit), duration * 1000);
     }
     
@@ -1293,7 +1286,8 @@ function initGame() {
         const index = currentBiscuits.indexOf(biscuit);
         if (index > -1) {
             currentBiscuits.splice(index, 1);
-            renderElementsToEat();
+            immediate_draw = true;
+            drawCanvas();
         }
     }
 
@@ -1643,12 +1637,11 @@ function initGame() {
         boostState = 'cooldown';
         game_buttons.boost.visible = false;
         game_buttons.boost_disabled.visible = true;
-    
         boostCooldown = settings.boost.cooldown;
-    
+        immediate_draw = true;
         const cooldownInterval = setInterval(() => {
             boostCooldown--;
-            renderGameInterface(); // Ridisegna il canvas con il countdown aggiornato
+            drawCanvas(); // Ridisegna il canvas con il countdown aggiornato
     
             if (boostCooldown <= 0 || currentView != 'game') {
                 clearInterval(cooldownInterval);
@@ -1670,7 +1663,7 @@ function initGame() {
             // Logica aggiuntiva per gestire il power_down se necessario
         }
     
-        renderGameInterface(); // Ridisegna il canvas per mostrare l'icona senza countdown
+        drawCanvas(); // Ridisegna il canvas per mostrare l'icona senza countdown
     }
     
     function enableBoost() {
@@ -1678,7 +1671,7 @@ function initGame() {
         boostState = 'enabled';
         game_buttons.boost.visible = true;
         game_buttons.boost_disabled.visible = false;
-        renderGameInterface();
+        drawCanvas();
     }
 
 
@@ -1724,7 +1717,7 @@ function initGame() {
         currentLevelState.levelTimerInterval = setInterval(() => {
             currentLevelState.levelTimeRemaining--;    
             // Aggiorna il countdown sulla top bar
-            renderGameInterface();
+            drawCanvas();
             // Se mancano meno di 10 secondi, riproduci il suono di tick
             if (currentLevelState.levelTimeRemaining <= 10 && currentLevelState.levelTimeRemaining > 0) {
                 playSound('clock_tick');
@@ -1810,12 +1803,14 @@ function initGame() {
             renderParrot();
         };
         // Resize e draw iniziale del canvas
+        immediate_draw = true;
         resizeCanvas();
         // Avvia l'animazione di movimento del pappagallo
         fpsInterval = 1000 / animation_fps;
         then = performance.now();
         updatePosition(); 
         // Avvia il gioco
+        main_draw_then = performance.now();
         playActionStarted();
     }
 
@@ -1857,11 +1852,13 @@ function initGame() {
             enterFullscreen();
             game_buttons.fullscreen.visible = false;
             game_buttons.fullscreen_exit.visible = true;
+            immediate_draw = true;
             drawCanvas();
         } else {
             exitFullscreen();
             game_buttons.fullscreen.visible = true;
             game_buttons.fullscreen_exit.visible = false;
+            immediate_draw = true;
             drawCanvas();
         }
     }
@@ -1924,7 +1921,6 @@ function initGame() {
         const view = views[viewname];
         if (!view) return;
         background_ctx.clearRect(0, 0, background_canvas.width, background_canvas.height);
-        elements_ctx.clearRect(0, 0, elements_canvas.width, elements_canvas.height);
         parrot_ctx.clearRect(0, 0, parrot_canvas.width, parrot_canvas.height);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
