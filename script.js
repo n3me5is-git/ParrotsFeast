@@ -24,18 +24,16 @@ parrot_canvas.width = canvas.width;
 background_canvas.height = canvas.height;
 background_canvas.width = canvas.width;
 
-
 // Impostazioni di gioco inglobate direttamente nel codice
 const default_settings = {
     seed: {
         maxCount: 5,
         minDuration: 3,
-        maxDuration: 30,
+        maxDuration: 20,
         xSeedMin: 50,
         xSeedMax: canvas_nom_width-50,
         ySeedMin: 50,
         ySeedMax: canvas_nom_height-150,
-        N: 2000, // Numero di coppie (x, y) da generare
         difficulty: 5, // Valore di difficulty da 1 a 10
         difficulty_seed_distance: 0,    // Managed by internal function
         difficulty_seed_time: 0,        // Managed by internal function
@@ -113,8 +111,6 @@ const levels = {
         extraLevelCode: '',
         settings: {
             seed: {
-                minDuration: 3,
-                maxDuration: 30,
                 difficulty: 1
             }
         }
@@ -125,8 +121,6 @@ const levels = {
         extraLevelCode: '',
         settings: {
             seed: {
-                minDuration: 3,
-                maxDuration: 30,
                 difficulty: 2
             }
         }
@@ -137,8 +131,6 @@ const levels = {
         extraLevelCode: '',
         settings: {
             seed: {
-                minDuration: 3,
-                maxDuration: 30,
                 difficulty: 3
             }
         }
@@ -149,8 +141,6 @@ const levels = {
         extraLevelCode: '',
         settings: {
             seed: {
-                minDuration: 3,
-                maxDuration: 30,
                 difficulty: 4
             }
         }
@@ -161,8 +151,6 @@ const levels = {
         extraLevelCode: '',
         settings: {
             seed: {
-                minDuration: 3,
-                maxDuration: 30,
                 difficulty: 5
             }
         }
@@ -173,8 +161,6 @@ const levels = {
         extraLevelCode: '',
         settings: {
             seed: {
-                minDuration: 3,
-                maxDuration: 30,
                 difficulty: 6
             }
         }
@@ -185,8 +171,6 @@ const levels = {
         extraLevelCode: '',
         settings: {
             seed: {
-                minDuration: 3,
-                maxDuration: 30,
                 difficulty: 7
             }
         }
@@ -197,8 +181,6 @@ const levels = {
         extraLevelCode: '',
         settings: {
             seed: {
-                minDuration: 3,
-                maxDuration: 30,
                 difficulty: 8
             }
         }
@@ -209,8 +191,6 @@ const levels = {
         extraLevelCode: '',
         settings: {
             seed: {
-                minDuration: 3,
-                maxDuration: 30,
                 difficulty: 9
             }
         }
@@ -221,8 +201,6 @@ const levels = {
         extraLevelCode: '',
         settings: {
             seed: {
-                minDuration: 3,
-                maxDuration: 30,
                 difficulty: 9
             }
         }
@@ -745,8 +723,6 @@ function initGame() {
                 if (seedType === 'seed3') currentLevelState.seedsCollectedType3++;
                 console.log(`Seed eaten (+${points}). New Score: ${score}`);
                 playSound('seed_eat'); // Gioca il suono associato
-                immediate_draw = true;
-                drawCanvas();
             } else {
                 // console.log('No collision detected.');
             }
@@ -803,6 +779,8 @@ function initGame() {
                 activatePowerDown(biscuitType);
             }
         });
+        immediate_draw = true;
+        drawCanvas();
     }
 
 
@@ -843,7 +821,6 @@ function initGame() {
                 clearInterval(interval);
                 deactivatePowerUp();
             }
-            immediate_draw = true;
             drawCanvas();
         }, 1000);
     }
@@ -1198,7 +1175,7 @@ function initGame() {
             y = position.y;
         } while (!isPositionValid(x, y, minDistance)); // Ripeti la generazione se la posizione non è valida
     
-        const duration = getRandomInt(settings.fruit.durationMin, settings.fruit.durationMax);
+        const duration = getRandomFloat(settings.fruit.durationMin, settings.fruit.durationMax);
         const randomFruitImage = fruitImages[Math.floor(Math.random() * fruitImages.length)];
     
         const fruit = {
@@ -1264,7 +1241,7 @@ function initGame() {
             y = position.y;
         } while (!isPositionValid(x, y, minDistance)); // Ripeti la generazione se la posizione non è valida
     
-        const duration = getRandomInt(settings.biscuit.durationMin, settings.biscuit.durationMax);
+        const duration = getRandomFloat(settings.biscuit.durationMin, settings.biscuit.durationMax);
         const randomBiscuitImage = biscuitImages[Math.floor(Math.random() * biscuitImages.length)];
     
         const biscuit = {
@@ -1309,6 +1286,11 @@ function initGame() {
 
     function getRandomInt(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+
+    function getRandomFloat(min, max) {
+        return Math.random() * (max - min + 1) + min;
     }
 
 
@@ -1499,38 +1481,38 @@ function initGame() {
         switch(difficulty) {
             case 1:
                 probabilities = [400, 300, 200, 100]; // Maggiore probabilità per durate lunghe
-                PDmin = [90, 80, 50, 40];
-                PDmax = [100, 100, 100, 80];
+                PDmin = [90, 70, 50, 40];
+                PDmax = [100, 100, 90, 80];
                 break;
             case 2:
                 probabilities = [350, 300, 250, 100];
-                PDmin = [80, 70, 50, 40];
-                PDmax = [100, 100, 80, 80];
+                PDmin = [70, 60, 50, 40];
+                PDmax = [100, 90, 80, 60];
                 break;
             case 3:
                 probabilities = [300, 300, 250, 150];
-                PDmin = [70, 60, 40, 35];
-                PDmax = [90, 90, 80, 80];
+                PDmin = [60, 50, 40, 30];
+                PDmax = [90, 80, 70, 50];
                 break;
             case 4:
                 probabilities = [250, 300, 250, 200];
-                PDmin = [70, 50, 30, 30];
-                PDmax = [90, 80, 70, 60];
+                PDmin = [50, 40, 30, 20];
+                PDmax = [80, 70, 60, 40];
                 break;
             case 5:
                 probabilities = [200, 300, 300, 200];
-                PDmin = [60, 50, 30, 15];
-                PDmax = [90, 70, 50, 40];
+                PDmin = [40, 40, 20, 15];
+                PDmax = [80, 60, 50, 30];
                 break;
             case 6:
                 probabilities = [150, 250, 300, 300];
-                PDmin = [50, 35, 20, 10];
-                PDmax = [80, 60, 50, 30];
+                PDmin = [35, 30, 15, 10];
+                PDmax = [70, 50, 50, 20];
                 break;
             case 7:
                 probabilities = [100, 200, 350, 350];
-                PDmin = [30, 25, 20, 10];
-                PDmax = [70, 50, 45, 25];
+                PDmin = [20, 20, 10, 0];
+                PDmax = [70, 50, 45, 10];
                 break;
             case 8:
                 probabilities = [50, 150, 400, 400];
@@ -1796,12 +1778,8 @@ function initGame() {
         background.onload = () => {
             renderGameBackground(); // Ridisegna il canvas solo dopo che lo sfondo è stato caricato
         };
-        parrotImage.onload = () => {
-            renderParrot();
-        };
-        parrotImageFlipped.onload = () => {
-            renderParrot();
-        };
+        parrotX = canvas_nom_width/2-25;
+        parrotY = canvas_nom_height/2-50;
         // Resize e draw iniziale del canvas
         immediate_draw = true;
         resizeCanvas();
@@ -1824,11 +1802,6 @@ function initGame() {
         stopFruitGeneration();
         stopBiscuitGeneration();
         currentView = null;
-        currentSeeds = [];
-        currentBiscuits = [];
-        currentBiscuitsProgrammed = [];
-        currentFruits = [];
-        currentFruitsProgrammed = [];
         deactivatePowerDown();
         deactivatePowerUp();
         enableBoost();
@@ -1838,6 +1811,11 @@ function initGame() {
             backgroundMusic.pause();
             backgroundMusic.currentTime = 0; // Resetta la traccia all'inizio
         }
+        while(currentSeeds.length > 0) { currentSeeds.pop(); }
+        while(currentBiscuitsProgrammed.length > 0) { currentBiscuitsProgrammed.pop(); }
+        while(currentBiscuits.length > 0) { currentBiscuits.pop(); }
+        while(currentFruitsProgrammed.length > 0) { currentFruitsProgrammed.pop(); }
+        while(currentFruits.length > 0) { currentFruits.pop(); }
         // Salva il punteggio e le statistiche solo per i livelli standard e quando non è stata modificata la difficulty di default
         if (currentLevelState.levelNumber <= base_game_end_level && modified_difficulty == 0) {
             saveScoreToDatabase();
@@ -2440,7 +2418,7 @@ function initGame() {
         };
     
         // Recupera i dati esistenti
-        let savedData = JSON.parse(localStorage.getItem(gameKey)) || [];
+        let savedData = dbLoadData(gameKey);
     
         // Verifica se esiste già un record per il giocatore corrente
         let existingRecord = savedData.find(record => record.playerName === game.playerName);
@@ -2461,14 +2439,13 @@ function initGame() {
             savedData.push(dataToSave);
         }
     
-        // Salva di nuovo nel localStorage
-        localStorage.setItem(gameKey, JSON.stringify(savedData));
+        // Salva di nuovo nel DB
+        dbStoreData(gameKey, savedData);
     }
 
 
     function getSortedScores(sortBy) {
-        let savedData = JSON.parse(localStorage.getItem(gameKey)) || [];
-    
+        let savedData = dbLoadData(gameKey);
         switch (sortBy) {
             case 'lastscore':
                 return savedData.sort((a, b) => b.score - a.score);
@@ -2487,7 +2464,6 @@ function initGame() {
     function getFormattedScores(sortBy) {
         // Ottieni i punteggi ordinati
         const sortedScores = getSortedScores(sortBy);
-    
         // Mappa i punteggi ordinati in un array di oggetti formattati
         return sortedScores.map(record => {
             return {
@@ -2502,17 +2478,25 @@ function initGame() {
 
 
     function getPlayerScoreDetails(playerName) {
-        let savedData = JSON.parse(localStorage.getItem(gameKey)) || [];
-    
+        let savedData = dbLoadData(gameKey);
         const playerData = savedData.find(record => record.playerName === playerName);
         if (!playerData) return null;
-    
         return {
             lastScore: playerData.score,
             lastScoreDate: playerData.date,
             highestScore: playerData.highestScore,
             highestScoreDate: playerData.highestScoreDate
         };
+    }
+
+
+    function dbLoadData(db_key) {
+        return JSON.parse(localStorage.getItem(db_key)) || [];
+    }
+
+
+    function dbStoreData(db_key, db_data) {
+        localStorage.setItem(db_key, JSON.stringify(db_data));
     }
 
 
@@ -2552,16 +2536,16 @@ function initGame() {
         const loaded_difficulty = settings.seed.difficulty || 5;
         // Definizione dei preset di difficoltà
         const DifficultyPresets = {
-            1: { time: 1, distance: 1 },
-            2: { time: 2, distance: 2 },
-            3: { time: 3, distance: 3 },
-            4: { time: 4, distance: 4 },
-            5: { time: 5, distance: 5 },
-            6: { time: 6, distance: 6 },
-            7: { time: 7, distance: 7 },
-            8: { time: 8, distance: 8 },
-            9: { time: 9, distance: 9 },
-            10: { time: 10, distance: 10 }
+            1: { time: 1, distance: 1, fruit: { durationMin: 10, durationMax: 20}, biscuit: { durationMin: 10, durationMax: 20} },
+            2: { time: 2, distance: 2, fruit: { durationMin: 8, durationMax: 17}, biscuit: { durationMin: 10, durationMax: 20} },
+            3: { time: 3, distance: 3, fruit: { durationMin: 8, durationMax: 15}, biscuit: { durationMin: 10, durationMax: 20} },
+            4: { time: 4, distance: 4, fruit: { durationMin: 5, durationMax: 15}, biscuit: { durationMin: 15, durationMax: 25} },
+            5: { time: 5, distance: 5, fruit: { durationMin: 5, durationMax: 12}, biscuit: { durationMin: 15, durationMax: 25} },
+            6: { time: 6, distance: 6, fruit: { durationMin: 5, durationMax: 10}, biscuit: { durationMin: 15, durationMax: 25} },
+            7: { time: 7, distance: 7, fruit: { durationMin: 3, durationMax: 8}, biscuit: { durationMin: 15, durationMax: 25} },
+            8: { time: 8, distance: 8, fruit: { durationMin: 3, durationMax: 8, spawnIntervalMax: 35}, biscuit: { durationMin: 20, durationMax: 30} },
+            9: { time: 9, distance: 9, fruit: { durationMin: 2, durationMax: 6, spawnIntervalMax: 30}, biscuit: { durationMin: 20, durationMax: 30} },
+            10: { time: 10, distance: 10, fruit: { durationMin: 2, durationMax: 6, spawnIntervalMax: 25}, biscuit: { durationMin: 20, durationMax: 30} }
             // Aggiungi altri preset se necessario
         };
         // Verifica se esiste un preset, altrimenti usa la difficoltà di default per entrambi
@@ -2576,11 +2560,15 @@ function initGame() {
         if (settings.seed.difficulty_seed_distance === 0) {
             settings.seed.difficulty_seed_distance = preset.distance;
         }
+        // Imposto la difficulty per frutti e biscotti se presente
+        settings.fruit = { ...settings.fruit, ...preset.fruit };
+        settings.biscuit = { ...settings.biscuit, ...preset.biscuit };
+        console.log(settings);
     }
-    
 
-    loadView('startView');
     
+    loadView('startView');
+
 
 }
 
