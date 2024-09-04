@@ -24,6 +24,12 @@ parrot_canvas.width = canvas.width;
 background_canvas.height = canvas.height;
 background_canvas.width = canvas.width;
 
+// Impostazioni Database esterno (256 richieste/giorno)
+RDBprojectId = "parrotsfeast-jvt3";
+RDBcollectionId = "scores";
+RDBapiKey = "fe574739-1bc8-43b2-93ea-79f92c3e15a5";
+remoteDB = true;    // codehooks.io
+
 // Impostazioni di gioco inglobate direttamente nel codice
 const default_settings = {
     seed: {
@@ -53,7 +59,7 @@ const default_settings = {
         seedBaseValue: 10
     },
     level: {
-        duration: 240
+        duration: 10
     },
     boost: {
         speed: 20, // Velocità del boost
@@ -208,6 +214,36 @@ const levels = {
     // Aggiungi altri livelli base qui
 
     // Aggiungi altri livelli Extra qui
+    11: {
+        background: 'background-level-jurassic.png',
+        music: 'background-music-jurassic.mp3',
+        extraLevelCode: 'E1',
+        settings: {
+            seed: {
+                difficulty: 6
+            }
+        }
+    },
+    12: {
+        background: 'background-level-artic.png',
+        music: 'background-music-artic.mp3',
+        extraLevelCode: 'E2',
+        settings: {
+            seed: {
+                difficulty: 6
+            }
+        }
+    },
+    13: {
+        background: 'background-level-superhero.png',
+        music: 'background-music-superhero.mp3',
+        extraLevelCode: 'E3',
+        settings: {
+            seed: {
+                difficulty: 6
+            }
+        }
+    },
 };
 
 const base_game_end_level = 10;     // Tutti i livelli dopo il 10 sono Extra
@@ -554,11 +590,10 @@ function initGame() {
         ctx.textAlign = 'left';
         let levelText;
         if (currentLevelState.levelNumber <= base_game_end_level) {
-            levels[game.selectedLevel].extraLevelCode
             levelText = `LV. ${currentLevelState.levelNumber}${currentLevelState.levelNumber < 10 ? ' ' : ''}`;
         } else {
             let game_level = levels[currentLevelState.levelNumber].extraLevelCode;
-            levelText = `LV. ${game_level}${game_level < 10 ? ' ' : ''}`;
+            levelText = `LV. ${game_level}`;
         }
         ctx.fillText(levelText, 10, 20);
     }
@@ -2418,7 +2453,7 @@ function initGame() {
         };
     
         // Recupera i dati esistenti
-        let savedData = dbLoadData(gameKey);
+        let savedData = dbLoadDataExt(gameKey);
     
         // Verifica se esiste già un record per il giocatore corrente
         let existingRecord = savedData.find(record => record.playerName === game.playerName);
@@ -2496,7 +2531,78 @@ function initGame() {
 
 
     function dbStoreData(db_key, db_data) {
+        // Salva i dati nel local storage
         localStorage.setItem(db_key, JSON.stringify(db_data));
+        // Se remoteDB è abilitato, salva anche nel database remoto
+        if (remoteDB) {
+            const maxRetries = 3; // Numero massimo di tentativi
+            let attempts = 0;
+            const saveToRemote = () => {
+                attempts++;
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", `https://${RDBprojectId}.api.codehooks.io/dev/${RDBcollectionId}`, true); // Asynchronous request
+                xhr.setRequestHeader("x-apikey", RDBapiKey);
+                xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                // Imposta il timeout a 3 secondi (3000 ms)
+                xhr.timeout = 3000;
+                xhr.ontimeout = function () {
+                    console.error("Timeout del salvataggio su codehooks");
+                    if (attempts < maxRetries) {
+                        console.log(`Tentativo di nuovo, tentativo ${attempts} di ${maxRetries}`);
+                        saveToRemote(); // Riprova il salvataggio
+                    }
+                };
+                xhr.onerror = function () {
+                    console.error("Errore di rete durante il salvataggio su codehooks");
+                    if (attempts < maxRetries) {
+                        console.log(`Tentativo di nuovo, tentativo ${attempts} di ${maxRetries}`);
+                        saveToRemote(); // Riprova il salvataggio
+                    }
+                };
+                xhr.onload = function () {
+                    if (xhr.status === 200 || xhr.status === 201) {
+                        console.log("Dati salvati correttamente su codehooks!");
+                    } else if (xhr.status >= 500 && xhr.status < 600 && attempts < maxRetries) {
+                        console.error(`Errore del server (${xhr.status}): ${xhr.statusText}`);
+                        console.log(`Tentativo di nuovo, tentativo ${attempts} di ${maxRetries}`);
+                        saveToRemote(); // Riprova il salvataggio
+                    } else {
+                        console.error(`Errore durante il salvataggio su codehooks: ${xhr.status} ${xhr.statusText}`);
+                    }
+                };
+                let db_data_str = JSON.stringify({ "data": db_data, "_id": gameKey});
+                xhr.send(db_data_str);
+            };
+            saveToRemote(); // Inizia il primo tentativo
+        }
+    }
+
+
+    function dbLoadDataExt(db_key) {
+        let data = [];
+        if (remoteDB) {
+            try {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', `https://${RDBprojectId}.api.codehooks.io/dev/${RDBcollectionId}/${gameKey}`, false);
+                xhr.setRequestHeader("x-apikey", RDBapiKey);
+                xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                xhr.send(null);
+                if (xhr.status === 200 || xhr.status === 201) {
+                    console.log("Punteggi caricati dal DB remoto");
+                    data = JSON.parse(xhr.responseText)["data"] || [];
+                    localStorage.setItem(db_key, JSON.stringify(data)); // Aggiorna il local storage
+                } else {
+                    console.log(`Errore nel caricamento dal database remoto. Uso DB LocalStorage. Status: ${xhr.status}`);
+                    data = JSON.parse(localStorage.getItem(db_key)) || [];
+                }
+            } catch (error) {
+                console.log(`Errore durante la chiamata HTTP. Uso DB LocalStorage. Status: ${error}`);
+                data = JSON.parse(localStorage.getItem(db_key)) || [];
+            }
+        } else {
+            data = JSON.parse(localStorage.getItem(db_key)) || [];
+        }
+        return data;
     }
 
 
@@ -2566,6 +2672,8 @@ function initGame() {
         console.log(settings);
     }
 
+
+    dbLoadDataExt(gameKey);
     
     loadView('startView');
 
@@ -2613,8 +2721,6 @@ window.addEventListener('beforeinstallprompt', (e) => {
         }
     });
 });
-
-
 
 
 // Avvio del gioco

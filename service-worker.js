@@ -1,4 +1,4 @@
-var CACHE_VERSION = 2;
+var CACHE_VERSION = 3;
 var CURRENT_CACHES = {
     prefetch: 'parrots-feast-cache-v' + CACHE_VERSION,
     ondemand: 'parrots-feast-cache-ondemand-v' + CACHE_VERSION
@@ -59,6 +59,9 @@ const urlsToPrefetch = [
     'background-level-pirates.png',
     'background-level-savana.png',
     'background-level-space.png',
+    'background-level-jurassic.png',
+    'background-level-artic.png',
+    'background-level-superhero.png',
     'background-music-arabia.mp3',
     'background-music-armageddon.mp3',
     'background-music-cityrio.mp3',
@@ -68,7 +71,10 @@ const urlsToPrefetch = [
     'background-music-jungle.mp3',
     'background-music-pirates.mp3',
     'background-music-savana.mp3',
-    'background-music-space.mp3'
+    'background-music-space.mp3',
+    'background-music-jurassic.mp3',
+    'background-music-artic.mp3',
+    'background-music-superhero.mp3'
 ];
 
 self.addEventListener('install', function(event) {
