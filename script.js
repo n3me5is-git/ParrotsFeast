@@ -59,7 +59,7 @@ const default_settings = {
         seedBaseValue: 10
     },
     level: {
-        duration: 10
+        duration: 240
     },
     boost: {
         speed: 20, // Velocità del boost
