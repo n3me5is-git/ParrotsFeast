@@ -1,4 +1,4 @@
-var CACHE_VERSION = 3;
+var CACHE_VERSION = 4;
 var CURRENT_CACHES = {
     prefetch: 'parrots-feast-cache-v' + CACHE_VERSION,
     ondemand: 'parrots-feast-cache-ondemand-v' + CACHE_VERSION

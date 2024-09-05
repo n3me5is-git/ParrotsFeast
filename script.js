@@ -2088,6 +2088,7 @@ function initGame() {
                         alert(`Name too long. It has been truncated to: ${playerName}`);
                     }
                     game.playerName = playerName;
+                    saveLocalSavedNickname(playerName);
                     drawView('startView'); // Rerenderizza la schermata con il nuovo nome
                 }
                 break;
@@ -2606,6 +2607,16 @@ function initGame() {
     }
 
 
+    function loadLocalSavedNickname() {
+        game.playerName = localStorage.getItem("local_nickname") || null;
+    }
+
+
+    function saveLocalSavedNickname(player_name) {
+        localStorage.setItem("local_nickname", player_name);
+    }
+
+
     function checkOrientationAndActivateFullscreen() {
         if (orientationCheckDone) return true; // Se il check è già stato fatto, esce dalla funzione
         orientationCheckDone = true; // Imposta il flag per evitare che la funzione venga eseguita di nuovo
@@ -2675,6 +2686,8 @@ function initGame() {
 
     dbLoadDataExt(gameKey);
     
+    loadLocalSavedNickname();
+
     loadView('startView');
 
 
