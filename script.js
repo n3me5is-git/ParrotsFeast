@@ -28,7 +28,7 @@ background_canvas.width = canvas.width;
 RDBprojectId = "parrotsfeast-jvt3";
 RDBcollectionId = "scores";
 RDBapiKey = "fe574739-1bc8-43b2-93ea-79f92c3e15a5";
-remoteDB = true;    // codehooks.io
+remoteDB = true;    // codehooks.io - Può essere modificato con ?remoteDB=true/false
 
 // Impostazioni di gioco inglobate direttamente nel codice
 const default_settings = {
@@ -238,6 +238,26 @@ const levels = {
         background: 'background-level-superhero.png',
         music: 'background-music-superhero.mp3',
         extraLevelCode: 'E3',
+        settings: {
+            seed: {
+                difficulty: 6
+            }
+        }
+    },
+    14: {
+        background: 'background-level-catcountry.png',
+        music: 'background-music-catcountry.mp3',
+        extraLevelCode: 'E4',
+        settings: {
+            seed: {
+                difficulty: 6
+            }
+        }
+    },
+    15: {
+        background: 'background-level-christmas.png',
+        music: 'background-music-christmas.mp3',
+        extraLevelCode: 'E5',
         settings: {
             seed: {
                 difficulty: 6
@@ -2244,7 +2264,7 @@ function initGame() {
             ctx.font = 'bold 18px Bosk, Georgia, sans-serif';
             ctx.fillText(`LV. ${game.selectedLevel}`, 353, 313);
         } else {
-            ctx.font = 'bold 14px Bosk, Georgia, sans-serif';
+            ctx.font = 'bold 15px Bosk, Georgia, sans-serif';
             ctx.fillText(`EL. ${levels[game.selectedLevel].extraLevelCode}`, 353, 310);
         }
         
@@ -2617,6 +2637,36 @@ function initGame() {
     }
 
 
+    // Funzione per ottenere il valore del query parameter
+    function getQueryParameter(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+
+
+    // Funzione per leggere, aggiornare e memorizzare remoteDB
+    function initializeRemoteDB() {
+        // Leggi il query parameter 'remoteDB' dall'URL
+        const remoteDBParam = getQueryParameter('remoteDB');
+        if (remoteDBParam !== null) {
+            // Se presente nell'URL, usa il valore del query parameter
+            remoteDB = remoteDBParam === 'true'; // Converte il valore in booleano
+            // Memorizza nel localStorage per usi futuri
+            localStorage.setItem('remoteDB', remoteDB);
+        } else {
+            // Se non presente, verifica nel localStorage
+            const storedRemoteDB = localStorage.getItem('remoteDB');
+            if (storedRemoteDB !== null) {
+                // Usa il valore memorizzato nel localStorage
+                remoteDB = storedRemoteDB === 'true';
+            }
+            // Altrimenti mantieni il valore di default
+        }
+        console.log('RemoteDB:', remoteDB);
+    }
+
+
+
     function checkOrientationAndActivateFullscreen() {
         if (orientationCheckDone) return true; // Se il check è già stato fatto, esce dalla funzione
         orientationCheckDone = true; // Imposta il flag per evitare che la funzione venga eseguita di nuovo
@@ -2683,6 +2733,9 @@ function initGame() {
         console.log(settings);
     }
 
+
+    // Chiama la funzione per inizializzare remoteDB al caricamento della pagina
+    initializeRemoteDB();
 
     dbLoadDataExt(gameKey);
     
