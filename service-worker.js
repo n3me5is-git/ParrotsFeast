@@ -1,4 +1,4 @@
-var CACHE_VERSION = 5;
+var CACHE_VERSION = 6;
 var CURRENT_CACHES = {
     prefetch: 'parrots-feast-cache-v' + CACHE_VERSION,
     ondemand: 'parrots-feast-cache-ondemand-v' + CACHE_VERSION
@@ -82,60 +82,75 @@ const urlsToPrefetch = [
 ];
 
 self.addEventListener('install', function(event) {
-  var now = Date.now();
-  console.log('Handling install event. Resources to prefetch:', urlsToPrefetch);
-  event.waitUntil(
-    caches.open(CURRENT_CACHES.prefetch).then(function(cache) {
-      var cachePromises = urlsToPrefetch.map(function(urlToPrefetch) {
-        var url = new URL(urlToPrefetch, location.href);
-        url.search += (url.search ? '&' : '?') + 'cache-bust=' + now;
-        var request = new Request(url, {mode: 'no-cors'});
-        return fetch(request).then(function(response) {
-          if (response.status >= 400) {
-            throw new Error('Request for ' + urlToPrefetch + ' failed with status ' + response.statusText);
-          } else if (response.status === 206) {
-            // Se la risposta è parziale, effettua una nuova richiesta per ottenere il file completo
-            var fullRequest = new Request(url, { headers: { 'Range': 'bytes=0-' } });
-            return fetch(fullRequest).then(function(fullResponse) {
-              if (fullResponse.status === 200) {
-                return cache.put(urlToPrefetch, fullResponse);
-              } else {
-                throw new Error('Failed to fetch the complete file for ' + urlToPrefetch);
-              }
+    var now = Date.now();
+    console.log('Handling install event. Resources to prefetch:', urlsToPrefetch);
+    // Elimina le vecchie cache prima di fare il prefetch
+    event.waitUntil(
+        caches.keys().then(function(cacheNames) {
+            return Promise.all(
+                cacheNames.map(function(cacheName) {
+                    if (!Object.values(CURRENT_CACHES).includes(cacheName)) {
+                        console.log('Deleting out of date cache:', cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        }).then(function() {
+            // Ora procedi al prefetch delle risorse
+            return caches.open(CURRENT_CACHES.prefetch).then(function(cache) {
+                var cachePromises = urlsToPrefetch.map(function(urlToPrefetch) {
+                    var url = new URL(urlToPrefetch, location.href);
+                    url.search += (url.search ? '&' : '?') + 'cache-bust=' + now;
+                    var request = new Request(url, { mode: 'no-cors' });
+                    return fetch(request).then(function(response) {
+                        if (response.status >= 400) {
+                            throw new Error('Request for ' + urlToPrefetch + ' failed with status ' + response.statusText);
+                        } else if (response.status === 206) {
+                            // Se la risposta è parziale, effettua una nuova richiesta per ottenere il file completo
+                            var fullRequest = new Request(url, { headers: { 'Range': 'bytes=0-' } });
+                            return fetch(fullRequest).then(function(fullResponse) {
+                                if (fullResponse.status === 200) {
+                                    return cache.put(urlToPrefetch, fullResponse);
+                                } else {
+                                    throw new Error('Failed to fetch the complete file for ' + urlToPrefetch);
+                                }
+                            });
+                        } else {
+                            return cache.put(urlToPrefetch, response);
+                        }
+                    }).catch(function(error) {
+                        console.error('Not caching ' + urlToPrefetch + ' due to ' + error);
+                    });
+                });
+                return Promise.all(cachePromises).then(function() {
+                    console.log('Pre-fetching complete.');
+                });
             });
-          } else {
-            return cache.put(urlToPrefetch, response);
-          }
         }).catch(function(error) {
-          console.error('Not caching ' + urlToPrefetch + ' due to ' + error);
-        });
-      });
-      return Promise.all(cachePromises).then(function() {
-        console.log('Pre-fetching complete.');
-      });
-    }).catch(function(error) {
-      console.error('Pre-fetching failed:', error);
-    })
-  );
+            console.error('Error during the install event:', error);
+        })
+    );
 });
 
+
 self.addEventListener('activate', function(event) {
-  var expectedCacheNames = Object.keys(CURRENT_CACHES).map(function(key) {
-    return CURRENT_CACHES[key];
-  });
-  event.waitUntil(
-    caches.keys().then(function(cacheNames) {
-      return Promise.all(
-        cacheNames.map(function(cacheName) {
-          if (expectedCacheNames.indexOf(cacheName) === -1) {
-            console.log('Deleting out of date cache:', cacheName);
-            return caches.delete(cacheName);
-          }
+    var expectedCacheNames = Object.keys(CURRENT_CACHES).map(function(key) {
+        return CURRENT_CACHES[key];
+    });
+    event.waitUntil(
+        caches.keys().then(function(cacheNames) {
+            return Promise.all(
+                cacheNames.map(function(cacheName) {
+                    if (expectedCacheNames.indexOf(cacheName) === -1) {
+                        console.log('Deleting out of date cache:', cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
         })
-      );
-    })
-  );
+    );
 });
+
 
 self.addEventListener('fetch', (event) => {
   event.respondWith(
